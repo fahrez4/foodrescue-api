@@ -1,0 +1,296 @@
+basePath: /api/v1
+definitions:
+  controllers.CreateFoodRequest:
+    properties:
+      category:
+        example: Makanan Berat
+        type: string
+      description:
+        example: Kelebihan porsi catering acara kantor, masih segar
+        type: string
+      latitude:
+        example: -6.2088
+        type: number
+      location_address:
+        example: Jl. Sudirman Kav. 50, Jakarta Pusat
+        type: string
+      longitude:
+        example: 106.8456
+        type: number
+      pickup_hours:
+        example: 4
+        minimum: 1
+        type: integer
+      quantity:
+        example: 15 porsi
+        type: string
+      title:
+        example: Nasi Kotak Ayam Bakar
+        type: string
+    required:
+    - category
+    - latitude
+    - longitude
+    - pickup_hours
+    - quantity
+    - title
+    type: object
+  controllers.UpdateFoodRequest:
+    properties:
+      category:
+        example: Makanan Berat
+        type: string
+      description:
+        example: Kelebihan porsi catering acara kantor, masih hangat dan lezat
+        type: string
+      latitude:
+        example: -6.2088
+        type: number
+      location_address:
+        example: Jl. Sudirman Kav. 50, Jakarta Pusat
+        type: string
+      longitude:
+        example: 106.8456
+        type: number
+      quantity:
+        example: 20 porsi
+        type: string
+      title:
+        example: Nasi Kotak Ayam Bakar Spesial
+        type: string
+    required:
+    - category
+    - latitude
+    - longitude
+    - quantity
+    - title
+    type: object
+  models.Response:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@foodrescue.id
+    name: FoodRescue Dev Team
+  description: REST API backend untuk aplikasi mobile Flutter "FoodRescue", platform
+    penyelamatan dan donasi surplus makanan.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: FoodRescue API
+  version: "1.0"
+paths:
+  /foods:
+    get:
+      description: Mengambil daftar surplus makanan yang berstatus 'available' dan
+        belum melewati batas waktu pickup (Public)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Berhasil memuat daftar surplus makanan
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Kesalahan internal server
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: '[READ] Ambil Daftar Surplus Makanan'
+      tags:
+      - Foods
+    post:
+      consumes:
+      - application/json
+      description: Menambahkan data postingan donasi makanan baru oleh user terautentikasi
+        (Protected)
+      parameters:
+      - description: Data Donasi Makanan
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateFoodRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Donasi makanan berhasil dibuat
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Data input tidak valid
+          schema:
+            $ref: '#/definitions/models.Response'
+        "401":
+          description: User belum terautentikasi
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Kesalahan internal server
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: '[CREATE] Donasikan Surplus Makanan Baru'
+      tags:
+      - Foods
+  /foods/{id}:
+    delete:
+      description: Menghapus atau membatalkan donasi makanan oleh donatur pemilik
+        jika belum diklaim (Protected)
+      parameters:
+      - description: ID Item Makanan (UUID)
+        example: '"a1b2c3d4-e5f6-7890-abcd-ef1234567890"'
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Donasi makanan berhasil dihapus
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Makanan yang sudah diklaim tidak dapat dihapus
+          schema:
+            $ref: '#/definitions/models.Response'
+        "401":
+          description: User belum terautentikasi
+          schema:
+            $ref: '#/definitions/models.Response'
+        "403":
+          description: Anda hanya dapat menghapus donasi milik Anda sendiri
+          schema:
+            $ref: '#/definitions/models.Response'
+        "404":
+          description: Item makanan tidak ditemukan
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Kesalahan internal server
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: '[DELETE] Hapus Donasi Makanan'
+      tags:
+      - Foods
+    get:
+      description: Mengambil informasi detail suatu item makanan beserta profil donatur
+        (Public)
+      parameters:
+      - description: ID Item Makanan (UUID)
+        example: '"a1b2c3d4-e5f6-7890-abcd-ef1234567890"'
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Berhasil memuat detail makanan
+          schema:
+            $ref: '#/definitions/models.Response'
+        "404":
+          description: Item makanan tidak ditemukan
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Kesalahan internal server
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: '[READ] Ambil Detail Makanan Berdasarkan ID'
+      tags:
+      - Foods
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui data surplus makanan yang telah diposting oleh donatur
+        pemilik (Protected)
+      parameters:
+      - description: ID Item Makanan (UUID)
+        example: '"a1b2c3d4-e5f6-7890-abcd-ef1234567890"'
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Data Pembaruan Makanan
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateFoodRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Data makanan berhasil diperbarui
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Data input tidak valid
+          schema:
+            $ref: '#/definitions/models.Response'
+        "401":
+          description: User belum terautentikasi
+          schema:
+            $ref: '#/definitions/models.Response'
+        "403":
+          description: Tidak memiliki akses untuk mengubah makanan ini
+          schema:
+            $ref: '#/definitions/models.Response'
+        "404":
+          description: Item makanan tidak ditemukan
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Kesalahan internal server
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: '[UPDATE] Perbarui Data Makanan'
+      tags:
+      - Foods
+  /my-foods:
+    get:
+      description: Mengambil seluruh riwayat makanan yang pernah didonasikan oleh
+        user yang sedang login (Protected)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Berhasil memuat daftar donasi saya
+          schema:
+            $ref: '#/definitions/models.Response'
+        "401":
+          description: User belum terautentikasi
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Kesalahan internal server
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: '[READ] Ambil Daftar Makanan Donasi Saya'
+      tags:
+      - Foods
+securityDefinitions:
+  BearerAuth:
+    description: Ketik "Bearer <token_jwt_anda>" untuk mengakses endpoint yang membutuhkan
+      autentikasi
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

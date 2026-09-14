@@ -1,0 +1,427 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "REST API backend untuk aplikasi mobile Flutter \"FoodRescue\", platform penyelamatan dan donasi surplus makanan.",
+        "title": "FoodRescue API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "FoodRescue Dev Team",
+            "email": "support@foodrescue.id"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api/v1",
+    "paths": {
+        "/foods": {
+            "get": {
+                "description": "Mengambil daftar surplus makanan yang berstatus 'available' dan belum melewati batas waktu pickup (Public)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Foods"
+                ],
+                "summary": "[READ] Ambil Daftar Surplus Makanan",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil memuat daftar surplus makanan",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Kesalahan internal server",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menambahkan data postingan donasi makanan baru oleh user terautentikasi (Protected)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Foods"
+                ],
+                "summary": "[CREATE] Donasikan Surplus Makanan Baru",
+                "parameters": [
+                    {
+                        "description": "Data Donasi Makanan",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.CreateFoodRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Donasi makanan berhasil dibuat",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Data input tidak valid",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "User belum terautentikasi",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Kesalahan internal server",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/foods/{id}": {
+            "get": {
+                "description": "Mengambil informasi detail suatu item makanan beserta profil donatur (Public)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Foods"
+                ],
+                "summary": "[READ] Ambil Detail Makanan Berdasarkan ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"",
+                        "description": "ID Item Makanan (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil memuat detail makanan",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Item makanan tidak ditemukan",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Kesalahan internal server",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Memperbarui data surplus makanan yang telah diposting oleh donatur pemilik (Protected)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Foods"
+                ],
+                "summary": "[UPDATE] Perbarui Data Makanan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"",
+                        "description": "ID Item Makanan (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Data Pembaruan Makanan",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.UpdateFoodRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Data makanan berhasil diperbarui",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Data input tidak valid",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "User belum terautentikasi",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Tidak memiliki akses untuk mengubah makanan ini",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Item makanan tidak ditemukan",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Kesalahan internal server",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menghapus atau membatalkan donasi makanan oleh donatur pemilik jika belum diklaim (Protected)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Foods"
+                ],
+                "summary": "[DELETE] Hapus Donasi Makanan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"",
+                        "description": "ID Item Makanan (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Donasi makanan berhasil dihapus",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Makanan yang sudah diklaim tidak dapat dihapus",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "User belum terautentikasi",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Anda hanya dapat menghapus donasi milik Anda sendiri",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Item makanan tidak ditemukan",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Kesalahan internal server",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/my-foods": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengambil seluruh riwayat makanan yang pernah didonasikan oleh user yang sedang login (Protected)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Foods"
+                ],
+                "summary": "[READ] Ambil Daftar Makanan Donasi Saya",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil memuat daftar donasi saya",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "User belum terautentikasi",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Kesalahan internal server",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "controllers.CreateFoodRequest": {
+            "type": "object",
+            "required": [
+                "category",
+                "latitude",
+                "longitude",
+                "pickup_hours",
+                "quantity",
+                "title"
+            ],
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "example": "Makanan Berat"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Kelebihan porsi catering acara kantor, masih segar"
+                },
+                "latitude": {
+                    "type": "number",
+                    "example": -6.2088
+                },
+                "location_address": {
+                    "type": "string",
+                    "example": "Jl. Sudirman Kav. 50, Jakarta Pusat"
+                },
+                "longitude": {
+                    "type": "number",
+                    "example": 106.8456
+                },
+                "pickup_hours": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 4
+                },
+                "quantity": {
+                    "type": "string",
+                    "example": "15 porsi"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Nasi Kotak Ayam Bakar"
+                }
+            }
+        },
+        "controllers.UpdateFoodRequest": {
+            "type": "object",
+            "required": [
+                "category",
+                "latitude",
+                "longitude",
+                "quantity",
+                "title"
+            ],
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "example": "Makanan Berat"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Kelebihan porsi catering acara kantor, masih hangat dan lezat"
+                },
+                "latitude": {
+                    "type": "number",
+                    "example": -6.2088
+                },
+                "location_address": {
+                    "type": "string",
+                    "example": "Jl. Sudirman Kav. 50, Jakarta Pusat"
+                },
+                "longitude": {
+                    "type": "number",
+                    "example": 106.8456
+                },
+                "quantity": {
+                    "type": "string",
+                    "example": "20 porsi"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Nasi Kotak Ayam Bakar Spesial"
+                }
+            }
+        },
+        "models.Response": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Ketik \"Bearer \u003ctoken_jwt_anda\u003e\" untuk mengakses endpoint yang membutuhkan autentikasi",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}
