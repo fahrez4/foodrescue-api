@@ -31,12 +31,12 @@ func Setup(r *gin.Engine) {
 	r.Use(middleware.LoggerMiddleware())
 	r.Use(gin.Recovery())
 
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	r.GET("/swagger", func(c *gin.Context) {
-		c.Redirect(http.StatusFound, "/swagger/index.html")
-	})
-	r.GET("/swagger/", func(c *gin.Context) {
-		c.Redirect(http.StatusFound, "/swagger/index.html")
+	r.GET("/swagger/*any", func(c *gin.Context) {
+		if c.Param("any") == "/" || c.Param("any") == "" {
+			c.Redirect(http.StatusFound, "/swagger/index.html")
+			return
+		}
+		ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
 	})
 
 	api := r.Group("/api/v1")
