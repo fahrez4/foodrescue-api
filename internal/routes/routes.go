@@ -64,7 +64,7 @@ func Setup(r *gin.Engine) {
 		// ───────── TOKO ─────────
 		tokoGroup := api.Group("/tokos")
 		{
-			tokoGroup.GET("/", toko.ListApprovedTokos)
+			tokoGroup.GET("", toko.ListApprovedTokos)
 			tokoGroup.GET("/:id", toko.GetTokoByID)
 
 			authed := tokoGroup.Group("", middleware.AuthMiddleware(), middleware.RoleGuard("toko"))
@@ -97,12 +97,12 @@ func Setup(r *gin.Engine) {
 		// ───────── LISTINGS ─────────
 		listingGroup := api.Group("/listings")
 		{
-			listingGroup.GET("/", listing.ListListings)
+			listingGroup.GET("", listing.ListListings)
 			listingGroup.GET("/:id", listing.GetListing)
 
 			authed := listingGroup.Group("", middleware.AuthMiddleware())
 			{
-				authed.POST("/", middleware.RoleGuard("toko"), listing.CreateListing)
+				authed.POST("", middleware.RoleGuard("toko"), listing.CreateListing)
 				authed.GET("/me/listings", middleware.RoleGuard("toko"), listing.GetMyListings)
 				authed.PUT("/:id", middleware.RoleGuard("toko"), listing.UpdateListing)
 				authed.DELETE("/:id", middleware.RoleGuard("toko"), listing.DeleteListing)
@@ -114,7 +114,7 @@ func Setup(r *gin.Engine) {
 		{
 			authed := orderGroup.Group("", middleware.AuthMiddleware())
 			{
-				authed.POST("/", middleware.RoleGuard("user"), order.CreateOrder)
+				authed.POST("", middleware.RoleGuard("user"), order.CreateOrder)
 				authed.GET("/me", order.GetMyOrders)
 				authed.GET("/:id", order.GetOrder)
 				authed.POST("/:id/cancel", order.CancelOrder)
@@ -135,11 +135,11 @@ func Setup(r *gin.Engine) {
 		// ───────── COMMUNITY ─────────
 		communityGroup := api.Group("/community")
 		{
-			communityGroup.GET("/", community.ListCommunityPosts)
+			communityGroup.GET("", community.ListCommunityPosts)
 
 			authed := communityGroup.Group("", middleware.AuthMiddleware())
 			{
-				authed.POST("/", middleware.RoleGuard("toko"), community.CreateCommunityPost)
+				authed.POST("", middleware.RoleGuard("toko"), community.CreateCommunityPost)
 				authed.POST("/claim", middleware.RoleGuard("user"), community.ClaimCommunityPost)
 				authed.POST("/:id/confirm", community.ConfirmCommunityPickup)
 			}
@@ -165,7 +165,7 @@ func Setup(r *gin.Engine) {
 
 			authed := ratingGroup.Group("", middleware.AuthMiddleware())
 			{
-				authed.POST("/", rating.CreateRating)
+				authed.POST("", rating.CreateRating)
 				authed.GET("/me/given", rating.GetMyGivenRatings)
 			}
 		}
@@ -175,7 +175,7 @@ func Setup(r *gin.Engine) {
 		{
 			authed := reportGroup.Group("", middleware.AuthMiddleware())
 			{
-				authed.POST("/", report.CreateReport)
+				authed.POST("", report.CreateReport)
 				authed.GET("/me", report.GetMyReports)
 			}
 		}
@@ -185,7 +185,7 @@ func Setup(r *gin.Engine) {
 		{
 			authed := chatGroup.Group("", middleware.AuthMiddleware())
 			{
-				authed.POST("/", chat.CreateChat)
+				authed.POST("", chat.CreateChat)
 				authed.GET("/me", chat.GetMyChats)
 				authed.GET("/:id/messages", chat.GetMessages)
 				authed.POST("/:id/messages", chat.SendMessage)
