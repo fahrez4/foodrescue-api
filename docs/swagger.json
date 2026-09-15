@@ -1,427 +1,942 @@
 {
-    "swagger": "2.0",
-    "info": {
-        "description": "REST API backend untuk aplikasi mobile Flutter \"FoodRescue\", platform penyelamatan dan donasi surplus makanan.",
-        "title": "FoodRescue API",
-        "termsOfService": "http://swagger.io/terms/",
-        "contact": {
-            "name": "FoodRescue Dev Team",
-            "email": "support@foodrescue.id"
-        },
-        "license": {
-            "name": "MIT",
-            "url": "https://opensource.org/licenses/MIT"
-        },
-        "version": "1.0"
-    },
-    "host": "localhost:8080",
-    "basePath": "/api/v1",
-    "paths": {
-        "/foods": {
-            "get": {
-                "description": "Mengambil daftar surplus makanan yang berstatus 'available' dan belum melewati batas waktu pickup (Public)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Foods"
-                ],
-                "summary": "[READ] Ambil Daftar Surplus Makanan",
-                "responses": {
-                    "200": {
-                        "description": "Berhasil memuat daftar surplus makanan",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Kesalahan internal server",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Menambahkan data postingan donasi makanan baru oleh user terautentikasi (Protected)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Foods"
-                ],
-                "summary": "[CREATE] Donasikan Surplus Makanan Baru",
-                "parameters": [
-                    {
-                        "description": "Data Donasi Makanan",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controllers.CreateFoodRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Donasi makanan berhasil dibuat",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Data input tidak valid",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "User belum terautentikasi",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Kesalahan internal server",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/foods/{id}": {
-            "get": {
-                "description": "Mengambil informasi detail suatu item makanan beserta profil donatur (Public)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Foods"
-                ],
-                "summary": "[READ] Ambil Detail Makanan Berdasarkan ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"",
-                        "description": "ID Item Makanan (UUID)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Berhasil memuat detail makanan",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Item makanan tidak ditemukan",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Kesalahan internal server",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Memperbarui data surplus makanan yang telah diposting oleh donatur pemilik (Protected)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Foods"
-                ],
-                "summary": "[UPDATE] Perbarui Data Makanan",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"",
-                        "description": "ID Item Makanan (UUID)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Data Pembaruan Makanan",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controllers.UpdateFoodRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Data makanan berhasil diperbarui",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Data input tidak valid",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "User belum terautentikasi",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Tidak memiliki akses untuk mengubah makanan ini",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Item makanan tidak ditemukan",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Kesalahan internal server",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Menghapus atau membatalkan donasi makanan oleh donatur pemilik jika belum diklaim (Protected)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Foods"
-                ],
-                "summary": "[DELETE] Hapus Donasi Makanan",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"",
-                        "description": "ID Item Makanan (UUID)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Donasi makanan berhasil dihapus",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Makanan yang sudah diklaim tidak dapat dihapus",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "User belum terautentikasi",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Anda hanya dapat menghapus donasi milik Anda sendiri",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Item makanan tidak ditemukan",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Kesalahan internal server",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/my-foods": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Mengambil seluruh riwayat makanan yang pernah didonasikan oleh user yang sedang login (Protected)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Foods"
-                ],
-                "summary": "[READ] Ambil Daftar Makanan Donasi Saya",
-                "responses": {
-                    "200": {
-                        "description": "Berhasil memuat daftar donasi saya",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "User belum terautentikasi",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Kesalahan internal server",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            }
-        }
-    },
-    "definitions": {
-        "controllers.CreateFoodRequest": {
-            "type": "object",
-            "required": [
-                "category",
-                "latitude",
-                "longitude",
-                "pickup_hours",
-                "quantity",
-                "title"
-            ],
-            "properties": {
-                "category": {
-                    "type": "string",
-                    "example": "Makanan Berat"
-                },
-                "description": {
-                    "type": "string",
-                    "example": "Kelebihan porsi catering acara kantor, masih segar"
-                },
-                "latitude": {
-                    "type": "number",
-                    "example": -6.2088
-                },
-                "location_address": {
-                    "type": "string",
-                    "example": "Jl. Sudirman Kav. 50, Jakarta Pusat"
-                },
-                "longitude": {
-                    "type": "number",
-                    "example": 106.8456
-                },
-                "pickup_hours": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "example": 4
-                },
-                "quantity": {
-                    "type": "string",
-                    "example": "15 porsi"
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Nasi Kotak Ayam Bakar"
-                }
-            }
-        },
-        "controllers.UpdateFoodRequest": {
-            "type": "object",
-            "required": [
-                "category",
-                "latitude",
-                "longitude",
-                "quantity",
-                "title"
-            ],
-            "properties": {
-                "category": {
-                    "type": "string",
-                    "example": "Makanan Berat"
-                },
-                "description": {
-                    "type": "string",
-                    "example": "Kelebihan porsi catering acara kantor, masih hangat dan lezat"
-                },
-                "latitude": {
-                    "type": "number",
-                    "example": -6.2088
-                },
-                "location_address": {
-                    "type": "string",
-                    "example": "Jl. Sudirman Kav. 50, Jakarta Pusat"
-                },
-                "longitude": {
-                    "type": "number",
-                    "example": 106.8456
-                },
-                "quantity": {
-                    "type": "string",
-                    "example": "20 porsi"
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Nasi Kotak Ayam Bakar Spesial"
-                }
-            }
-        },
-        "models.Response": {
-            "type": "object",
-            "properties": {
-                "data": {},
-                "message": {
-                    "type": "string"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        }
-    },
-    "securityDefinitions": {
-        "BearerAuth": {
-            "description": "Ketik \"Bearer \u003ctoken_jwt_anda\u003e\" untuk mengakses endpoint yang membutuhkan autentikasi",
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
-        }
+  "swagger": "2.0",
+  "info": {
+    "title": "FoodRescue API",
+    "description": "REST API backend untuk aplikasi mobile Flutter \"FoodRescue\" — platform penyelamatan dan donasi surplus makanan.",
+    "version": "1.0.0",
+    "contact": { "name": "FoodRescue Dev Team", "email": "support@foodrescue.id" },
+    "license": { "name": "MIT" }
+  },
+  "host": "139.190.96.203:8091",
+  "basePath": "/api/v1",
+  "schemes": ["http"],
+  "securityDefinitions": {
+    "BearerAuth": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "Masukkan: `Bearer <token_jwt>`"
     }
+  },
+  "tags": [
+    { "name": "Health", "description": "Pengecekan status API" },
+    { "name": "Auth", "description": "Registrasi, login, profil, Google Sign-In" },
+    { "name": "Users", "description": "Profil user publik, impact, metode pembayaran" },
+    { "name": "Toko", "description": "Profil toko & rekan penyelamat makanan" },
+    { "name": "Kurir", "description": "Profil kurir, status online, pengantaran" },
+    { "name": "Listings", "description": "Listing surplus makanan" },
+    { "name": "Orders", "description": "Pesanan makanan" },
+    { "name": "Deliveries", "description": "Pengantaran oleh kurir" },
+    { "name": "Community", "description": "Donasi kompos & pakan ternak" },
+    { "name": "Emergency", "description": "Alert darurat & respons toko" },
+    { "name": "Ratings", "description": "Rating toko / kurir / user" },
+    { "name": "Reports", "description": "Laporan penyalahgunaan" },
+    { "name": "Chats", "description": "Obrolan user–toko" },
+    { "name": "AI", "description": "Asisten AI Gemini (nutrisi & deteksi kamera)" },
+    { "name": "Payments", "description": "Pembayaran Midtrans & notifikasi" },
+    { "name": "Admin", "description": "Manajemen & moderasi (khusus admin)" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "OK", "schema": { "$ref": "#/definitions/Health" } } }
+      }
+    },
+
+    "/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Registrasi user baru (user / toko / kurir)",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/RegisterRequest" } }],
+        "responses": {
+          "200": { "description": "Berhasil — kembalikan token + user", "schema": { "$ref": "#/definitions/AuthResponse" } },
+          "409": { "description": "Email sudah terdaftar" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login dengan email & password",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/LoginRequest" } }],
+        "responses": {
+          "200": { "description": "Berhasil", "schema": { "$ref": "#/definitions/AuthResponse" } },
+          "401": { "description": "Email/password salah" }
+        }
+      }
+    },
+    "/auth/google": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login dengan Google ID Token",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/GoogleLoginRequest" } }],
+        "responses": { "200": { "description": "Berhasil", "schema": { "$ref": "#/definitions/AuthResponse" } } }
+      }
+    },
+    "/auth/google/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Registrasi user baru via Google (role + no HP)",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/GoogleRegisterRequest" } }],
+        "responses": { "200": { "description": "Berhasil", "schema": { "$ref": "#/definitions/AuthResponse" } } }
+      }
+    },
+    "/auth/profile": {
+      "get": {
+        "tags": ["Auth"], "security": [{ "BearerAuth": [] }],
+        "summary": "Get profil user yang login",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Profil", "schema": { "$ref": "#/definitions/User" } } }
+      },
+      "put": {
+        "tags": ["Auth"], "security": [{ "BearerAuth": [] }],
+        "summary": "Update profil (nama, foto, telepon, alamat, koordinat)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/UpdateProfileRequest" } }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+
+    "/users/{id}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get profil user publik",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "type": "string" }],
+        "responses": { "200": { "description": "Profil user", "schema": { "$ref": "#/definitions/User" } } }
+      }
+    },
+    "/users/me/impact": {
+      "get": {
+        "tags": ["Users"], "security": [{ "BearerAuth": [] }],
+        "summary": "Total makanan diselamatkan user (kg, order, CO2)",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Dampak" } }
+      }
+    },
+    "/users/payment-methods": {
+      "post": {
+        "tags": ["Users"], "security": [{ "BearerAuth": [] }],
+        "summary": "Daftar metode pembayaran baru",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/PaymentMethodCreate" } }],
+        "responses": { "201": { "description": "Berhasil" } }
+      },
+      "get": {
+        "tags": ["Users"], "security": [{ "BearerAuth": [] }],
+        "summary": "Daftar metode pembayaran user",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Daftar metode" } }
+      }
+    },
+
+    "/tokos": {
+      "get": {
+        "tags": ["Toko"],
+        "summary": "Daftar toko terverifikasi (publik)",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Daftar toko" } }
+      },
+      "post": {
+        "tags": ["Toko"], "security": [{ "BearerAuth": [] }],
+        "summary": "Buat profil toko (status pending, tunggu verifikasi admin)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/TokoProfileCreate" } }],
+        "responses": { "201": { "description": "Berhasil dibuat" } }
+      }
+    },
+    "/tokos/{id}": {
+      "get": {
+        "tags": ["Toko"],
+        "summary": "Detail toko terverifikasi",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "type": "string" }],
+        "responses": { "200": { "description": "Toko", "schema": { "$ref": "#/definitions/TokoProfile" } } }
+      }
+    },
+    "/tokos/me/profile": {
+      "get": {
+        "tags": ["Toko"], "security": [{ "BearerAuth": [] }],
+        "summary": "Get profil toko milik saya (role toko)",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Profil toko", "schema": { "$ref": "#/definitions/TokoProfile" } } }
+      },
+      "put": {
+        "tags": ["Toko"], "security": [{ "BearerAuth": [] }],
+        "summary": "Update profil toko milik saya",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/TokoProfileCreate" } }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/tokos/me/analytics": {
+      "get": {
+        "tags": ["Toko"], "security": [{ "BearerAuth": [] }],
+        "summary": "Statistik penjualan toko",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Analitik" } }
+      }
+    },
+    "/tokos/me/ratings": {
+      "get": {
+        "tags": ["Toko"], "security": [{ "BearerAuth": [] }],
+        "summary": "Daftar rating yang diterima toko",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Daftar rating" } }
+      }
+    },
+
+    "/kurirs/me/profile": {
+      "get": {
+        "tags": ["Kurir"], "security": [{ "BearerAuth": [] }],
+        "summary": "Get profil kurir milik saya",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Profil kurir", "schema": { "$ref": "#/definitions/CourierProfile" } } }
+      },
+      "put": {
+        "tags": ["Kurir"], "security": [{ "BearerAuth": [] }],
+        "summary": "Update profil kurir (kendaraan, dokumen)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/CourierProfileUpdate" } }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/kurirs/me/online": {
+      "patch": {
+        "tags": ["Kurir"], "security": [{ "BearerAuth": [] }],
+        "summary": "Toggle status online kurir",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/ToggleOnlineRequest" } }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/kurirs/me/location": {
+      "put": {
+        "tags": ["Kurir"], "security": [{ "BearerAuth": [] }],
+        "summary": "Update koordinat kurir",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/LocationRequest" } }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/kurirs/deliveries/pending": {
+      "get": {
+        "tags": ["Kurir"], "security": [{ "BearerAuth": [] }],
+        "summary": "Daftar pengantaran yang sedang mencari kurir",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Daftar" } }
+      }
+    },
+    "/kurirs/deliveries/accept": {
+      "post": {
+        "tags": ["Kurir"], "security": [{ "BearerAuth": [] }],
+        "summary": "Terima penawaran pengantaran",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/DeliveryIDRequest" } }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/kurirs/deliveries/trip": {
+      "put": {
+        "tags": ["Kurir"], "security": [{ "BearerAuth": [] }],
+        "summary": "Update status perjalanan (menuju_toko / barang_diambil / menuju_user / diterima_user)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/TripStatusRequest" } }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/kurirs/deliveries/confirm-pickup": {
+      "post": {
+        "tags": ["Kurir"], "security": [{ "BearerAuth": [] }],
+        "summary": "Konfirmasi ambil barang (kode pickup)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/ConfirmationCodeRequest" } }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/kurirs/deliveries/confirm-dropoff": {
+      "post": {
+        "tags": ["Kurir"], "security": [{ "BearerAuth": [] }],
+        "summary": "Konfirmasi antar barang (kode dropoff)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/ConfirmationCodeRequest" } }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/kurirs/me/earnings": {
+      "get": {
+        "tags": ["Kurir"], "security": [{ "BearerAuth": [] }],
+        "summary": "Total & rincian pendapatan kurir",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Pendapatan" } }
+      }
+    },
+
+    "/listings": {
+      "get": {
+        "tags": ["Listings"],
+        "summary": "Daftar listing aktif (publik, paginated, bisa filter & search)",
+        "produces": ["application/json"],
+        "parameters": [
+          { "in": "query", "name": "page", "type": "integer", "default": 1 },
+          { "in": "query", "name": "limit", "type": "integer", "default": 20 },
+          { "in": "query", "name": "category", "type": "string" },
+          { "in": "query", "name": "search", "type": "string" }
+        ],
+        "responses": { "200": { "description": "Hasil", "schema": { "$ref": "#/definitions/PaginatedResponse" } } }
+      },
+      "post": {
+        "tags": ["Listings"], "security": [{ "BearerAuth": [] }],
+        "summary": "Buat listing baru (role toko, harus terverifikasi)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/CreateListingRequest" } }],
+        "responses": { "201": { "description": "Listing dibuat" } }
+      }
+    },
+    "/listings/{id}": {
+      "get": {
+        "tags": ["Listings"],
+        "summary": "Detail listing",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "type": "string" }],
+        "responses": { "200": { "description": "Listing", "schema": { "$ref": "#/definitions/FoodListing" } } }
+      },
+      "put": {
+        "tags": ["Listings"], "security": [{ "BearerAuth": [] }],
+        "summary": "Update listing (hanya pemilik toko)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "type": "string" },
+          { "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/UpdateListingRequest" } }
+        ],
+        "responses": { "200": { "description": "Berhasil" } }
+      },
+      "delete": {
+        "tags": ["Listings"], "security": [{ "BearerAuth": [] }],
+        "summary": "Hapus listing (hanya pemilik toko)",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "type": "string" }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/listings/me/listings": {
+      "get": {
+        "tags": ["Listings"], "security": [{ "BearerAuth": [] }],
+        "summary": "Daftar listing milik toko saya",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Daftar listing" } }
+      }
+    },
+
+    "/orders": {
+      "post": {
+        "tags": ["Orders"], "security": [{ "BearerAuth": [] }],
+        "summary": "Buat order (role user)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/CreateOrderRequest" } }],
+        "responses": { "201": { "description": "Order dibuat (+ confirmation_code)" } }
+      }
+    },
+    "/orders/me": {
+      "get": {
+        "tags": ["Orders"], "security": [{ "BearerAuth": [] }],
+        "summary": "Daftar order saya (user)",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Daftar order" } }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "tags": ["Orders"], "security": [{ "BearerAuth": [] }],
+        "summary": "Detail order",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "type": "string" }],
+        "responses": { "200": { "description": "Order", "schema": { "$ref": "#/definitions/Order" } } }
+      }
+    },
+    "/orders/{id}/cancel": {
+      "post": {
+        "tags": ["Orders"], "security": [{ "BearerAuth": [] }],
+        "summary": "Batalkan order",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "type": "string" }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/orders/{id}/confirm-payment": {
+      "post": {
+        "tags": ["Orders"], "security": [{ "BearerAuth": [] }],
+        "summary": "Konfirmasi pembayaran manual",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "type": "string" },
+          { "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/ConfirmPaymentRequest" } }
+        ],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+
+    "/deliveries/order/{order_id}": {
+      "get": {
+        "tags": ["Deliveries"], "security": [{ "BearerAuth": [] }],
+        "summary": "Cek status pengantaran dari order",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "path", "name": "order_id", "required": true, "type": "string" }],
+        "responses": { "200": { "description": "Pengantaran", "schema": { "$ref": "#/definitions/Delivery" } } }
+      }
+    },
+    "/deliveries/me": {
+      "get": {
+        "tags": ["Deliveries"], "security": [{ "BearerAuth": [] }],
+        "summary": "Daftar pengantaran saya (kurir)",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Daftar" } }
+      }
+    },
+
+    "/community": {
+      "get": {
+        "tags": ["Community"],
+        "summary": "Daftar posting donasi komunitas",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Daftar posting" } }
+      },
+      "post": {
+        "tags": ["Community"], "security": [{ "BearerAuth": [] }],
+        "summary": "Buat posting komunitas dari listing (role toko)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/CreateCommunityPostRequest" } }],
+        "responses": { "201": { "description": "Berhasil" } }
+      }
+    },
+    "/community/claim": {
+      "post": {
+        "tags": ["Community"], "security": [{ "BearerAuth": [] }],
+        "summary": "Klaim posting donasi (role user)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/ClaimCommunityPostRequest" } }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/community/{id}/confirm": {
+      "post": {
+        "tags": ["Community"], "security": [{ "BearerAuth": [] }],
+        "summary": "Konfirmasi pickup donasi",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "type": "string" }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+
+    "/emergency/alerts": {
+      "get": {
+        "tags": ["Emergency"],
+        "summary": "Daftar alert aktif (publik)",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Daftar alert" } }
+      },
+      "post": {
+        "tags": ["Emergency"], "security": [{ "BearerAuth": [] }],
+        "summary": "Buat alert darurat (role user, wajib terverifikasi NGO)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/CreateEmergencyAlertRequest" } }],
+        "responses": { "201": { "description": "Berhasil" } }
+      }
+    },
+    "/emergency/alerts/{id}/responses": {
+      "get": {
+        "tags": ["Emergency"],
+        "summary": "Daftar respons toko terhadap alert",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "type": "string" }],
+        "responses": { "200": { "description": "Daftar respons" } }
+      }
+    },
+    "/emergency/responses": {
+      "post": {
+        "tags": ["Emergency"], "security": [{ "BearerAuth": [] }],
+        "summary": "Toko merespons alert darurat",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/RespondEmergencyAlertRequest" } }],
+        "responses": { "201": { "description": "Berhasil" } }
+      }
+    },
+
+    "/ratings/{id}": {
+      "get": {
+        "tags": ["Ratings"],
+        "summary": "Daftar rating untuk target user (opsional query `target` = toko|kurir|user)",
+        "produces": ["application/json"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "type": "string" },
+          { "in": "query", "name": "target", "type": "string" }
+        ],
+        "responses": { "200": { "description": "Daftar rating" } }
+      }
+    },
+    "/ratings": {
+      "post": {
+        "tags": ["Ratings"], "security": [{ "BearerAuth": [] }],
+        "summary": "Beri rating (toko/kurir/user)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/CreateRatingRequest" } }],
+        "responses": { "201": { "description": "Berhasil" } }
+      }
+    },
+    "/ratings/me/given": {
+      "get": {
+        "tags": ["Ratings"], "security": [{ "BearerAuth": [] }],
+        "summary": "Daftar rating yang pernah saya berikan",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Daftar" } }
+      }
+    },
+
+    "/reports": {
+      "post": {
+        "tags": ["Reports"], "security": [{ "BearerAuth": [] }],
+        "summary": "Buat laporan penyalahgunaan",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/CreateReportRequest" } }],
+        "responses": { "201": { "description": "Berhasil" } }
+      }
+    },
+    "/reports/me": {
+      "get": {
+        "tags": ["Reports"], "security": [{ "BearerAuth": [] }],
+        "summary": "Daftar laporan saya",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Daftar" } }
+      }
+    },
+
+    "/chats": {
+      "post": {
+        "tags": ["Chats"], "security": [{ "BearerAuth": [] }],
+        "summary": "Buka chat untuk sebuah order",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/CreateChatRequest" } }],
+        "responses": { "201": { "description": "Berhasil" } }
+      }
+    },
+    "/chats/me": {
+      "get": {
+        "tags": ["Chats"], "security": [{ "BearerAuth": [] }],
+        "summary": "Daftar chat saya",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Daftar chat" } }
+      }
+    },
+    "/chats/{id}/messages": {
+      "get": {
+        "tags": ["Chats"], "security": [{ "BearerAuth": [] }],
+        "summary": "Ambil riwayat pesan chat",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "type": "string" }],
+        "responses": { "200": { "description": "Pesan" } }
+      },
+      "post": {
+        "tags": ["Chats"], "security": [{ "BearerAuth": [] }],
+        "summary": "Kirim pesan",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "type": "string" },
+          { "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/SendMessageRequest" } }
+        ],
+        "responses": { "201": { "description": "Berhasil" } }
+      }
+    },
+
+    "/ai/chat": {
+      "post": {
+        "tags": ["AI"], "security": [{ "BearerAuth": [] }],
+        "summary": "Tanya AI Gemini soal listing (nutrisi & ide pengolahan)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/AIChatRequest" } }],
+        "responses": { "200": { "description": "Balasan AI + conversation_id" } }
+      }
+    },
+    "/ai/detect": {
+      "post": {
+        "tags": ["AI"], "security": [{ "BearerAuth": [] }],
+        "summary": "Deteksi jenis & kelayakan makanan dari foto",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/DetectPhotoRequest" } }],
+        "responses": { "200": { "description": "Hasil deteksi" } }
+      }
+    },
+    "/ai/conversations/{id}/messages": {
+      "get": {
+        "tags": ["AI"], "security": [{ "BearerAuth": [] }],
+        "summary": "Riwayat percakapan AI",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "type": "string" }],
+        "responses": { "200": { "description": "Pesan" } }
+      },
+      "post": {
+        "tags": ["AI"], "security": [{ "BearerAuth": [] }],
+        "summary": "Lanjutkan percakapan AI",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "type": "string" },
+          { "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/AIContinueRequest" } }
+        ],
+        "responses": { "200": { "description": "Balasan" } }
+      }
+    },
+
+    "/payments/create": {
+      "post": {
+        "tags": ["Payments"], "security": [{ "BearerAuth": [] }],
+        "summary": "Buat transaksi pembayaran (Midtrans SNAP / manual)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/CreatePaymentRequest" } }],
+        "responses": { "200": { "description": "Data pembayaran" } }
+      }
+    },
+    "/payments/notification": {
+      "post": {
+        "tags": ["Payments"],
+        "summary": "Webhook notifikasi Midtrans",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [{ "in": "body", "name": "body", "required": true }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+
+    "/admin/dashboard": {
+      "get": {
+        "tags": ["Admin"], "security": [{ "BearerAuth": [] }],
+        "summary": "Dashboard analitik admin",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Analitik" } }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": ["Admin"], "security": [{ "BearerAuth": [] }],
+        "summary": "Daftar semua user (opsional filter role)",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "query", "name": "role", "type": "string" }],
+        "responses": { "200": { "description": "Daftar user" } }
+      }
+    },
+    "/admin/verifications": {
+      "get": {
+        "tags": ["Admin"], "security": [{ "BearerAuth": [] }],
+        "summary": "Daftar user/toko/kurir yang menunggu verifikasi",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Daftar" } }
+      }
+    },
+    "/admin/verifications/{id}": {
+      "post": {
+        "tags": ["Admin"], "security": [{ "BearerAuth": [] }],
+        "summary": "Approve / reject verifikasi toko/kurir",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "type": "string" },
+          { "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/AdminVerifyRequest" } }
+        ],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/admin/users/{id}": {
+      "delete": {
+        "tags": ["Admin"], "security": [{ "BearerAuth": [] }],
+        "summary": "Hapus user",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "type": "string" }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/admin/users/{id}/deactivate": {
+      "put": {
+        "tags": ["Admin"], "security": [{ "BearerAuth": [] }],
+        "summary": "Non-aktifkan user",
+        "produces": ["application/json"],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "type": "string" }],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/admin/users/{id}/verify-ngo": {
+      "put": {
+        "tags": ["Admin"], "security": [{ "BearerAuth": [] }],
+        "summary": "Verifikasi user sebagai NGO",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "type": "string" },
+          { "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/VerifyNGORequest" } }
+        ],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    },
+    "/admin/reports": {
+      "get": {
+        "tags": ["Admin"], "security": [{ "BearerAuth": [] }],
+        "summary": "Daftar laporan",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "Daftar" } }
+      }
+    },
+    "/admin/reports/{id}": {
+      "put": {
+        "tags": ["Admin"], "security": [{ "BearerAuth": [] }],
+        "summary": "Tindaklanjuti laporan (ditinjau / ditindak / ditolak)",
+        "consumes": ["application/json"], "produces": ["application/json"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "type": "string" },
+          { "in": "body", "name": "body", "required": true, "schema": { "$ref": "#/definitions/ReviewReportRequest" } }
+        ],
+        "responses": { "200": { "description": "Berhasil" } }
+      }
+    }
+  },
+  "definitions": {
+    "Health": { "type": "object", "properties": { "service": { "type": "string" }, "status": { "type": "string" } } },
+    "AuthResponse": {
+      "type": "object",
+      "properties": { "token": { "type": "string", "example": "eyJhbGciOiJIUzI1NiIs..." }, "user": { "$ref": "#/definitions/User" } }
+    },
+    "User": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" }, "email": { "type": "string" }, "full_name": { "type": "string" },
+        "photo_url": { "type": "string", "x-nullable": true }, "phone_number": { "type": "string", "x-nullable": true },
+        "auth_provider": { "type": "string", "enum": ["google", "email_password"] },
+        "role": { "type": "string", "enum": ["user", "toko", "kurir", "admin"] },
+        "is_ngo_verified": { "type": "boolean" }, "trust_score": { "type": "number", "format": "float" },
+        "latitude": { "type": "number", "format": "float", "x-nullable": true },
+        "longitude": { "type": "number", "format": "float", "x-nullable": true },
+        "address_text": { "type": "string", "x-nullable": true },
+        "account_status": { "type": "string", "enum": ["pending_verification", "active", "rejected", "suspended", "deactivated"] },
+        "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "RegisterRequest": {
+      "type": "object", "required": ["email", "full_name", "role"],
+      "properties": {
+        "email": { "type": "string", "example": "user@example.com" },
+        "password": { "type": "string", "minLength": 6, "example": "rahasia123" },
+        "full_name": { "type": "string" },
+        "phone_number": { "type": "string", "example": "081234567890" },
+        "role": { "type": "string", "enum": ["user", "toko", "kurir"], "example": "user" }
+      }
+    },
+    "LoginRequest": {
+      "type": "object", "required": ["email", "password"],
+      "properties": { "email": { "type": "string" }, "password": { "type": "string" } }
+    },
+    "GoogleLoginRequest": { "type": "object", "required": ["id_token"], "properties": { "id_token": { "type": "string" } } },
+    "GoogleRegisterRequest": {
+      "type": "object", "required": ["id_token", "role"],
+      "properties": { "id_token": { "type": "string" }, "role": { "type": "string", "enum": ["user", "toko", "kurir"] }, "phone_number": { "type": "string" } }
+    },
+    "UpdateProfileRequest": {
+      "type": "object",
+      "properties": {
+        "full_name": { "type": "string" }, "phone_number": { "type": "string" }, "photo_url": { "type": "string" },
+        "address_text": { "type": "string" }, "latitude": { "type": "number" }, "longitude": { "type": "number" }
+      }
+    },
+    "PaymentMethodCreate": {
+      "type": "object", "required": ["provider", "account_reference"],
+      "properties": { "provider": { "type": "string" }, "account_reference": { "type": "string" } }
+    },
+    "TokoProfileCreate": {
+      "type": "object", "required": ["business_name", "business_category", "address"],
+      "properties": {
+        "business_name": { "type": "string", "example": "Toko Amanah" },
+        "business_category": { "type": "string", "example": "Sembako" },
+        "address": { "type": "string" },
+        "legal_document_url": { "type": "string" },
+        "operational_hours": { "type": "string", "example": "08:00-21:00" },
+        "latitude": { "type": "number", "format": "float" }, "longitude": { "type": "number", "format": "float" }
+      }
+    },
+    "TokoProfile": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" }, "user_id": { "type": "string" },
+        "business_name": { "type": "string" }, "business_category": { "type": "string" },
+        "address": { "type": "string" }, "latitude": { "type": "number" }, "longitude": { "type": "number" },
+        "legal_document_url": { "type": "string" }, "operational_hours": { "type": "string" },
+        "verification_status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "average_rating": { "type": "number" }, "created_at": { "type": "string" }, "updated_at": { "type": "string" }
+      }
+    },
+    "CourierProfile": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" }, "user_id": { "type": "string" }, "vehicle_type": { "type": "string" },
+        "id_document_url": { "type": "string" }, "verification_status": { "type": "string" },
+        "is_online": { "type": "boolean" }, "current_latitude": { "type": "number" },
+        "current_longitude": { "type": "number" }, "average_rating": { "type": "number" }
+      }
+    },
+    "CourierProfileUpdate": {
+      "type": "object",
+      "properties": { "vehicle_type": { "type": "string" }, "id_document_url": { "type": "string" } }
+    },
+    "ToggleOnlineRequest": { "type": "object", "properties": { "is_online": { "type": "boolean" } } },
+    "LocationRequest": {
+      "type": "object", "required": ["latitude", "longitude"],
+      "properties": { "latitude": { "type": "number" }, "longitude": { "type": "number" } }
+    },
+    "DeliveryIDRequest": { "type": "object", "required": ["delivery_id"], "properties": { "delivery_id": { "type": "string" } } },
+    "TripStatusRequest": {
+      "type": "object", "required": ["delivery_id", "trip_status"],
+      "properties": { "delivery_id": { "type": "string" }, "trip_status": { "type": "string", "enum": ["menuju_toko", "barang_diambil", "menuju_user", "diterima_user"] } }
+    },
+    "ConfirmationCodeRequest": {
+      "type": "object", "required": ["delivery_id", "confirmation_code"],
+      "properties": { "delivery_id": { "type": "string" }, "confirmation_code": { "type": "string", "example": "X485R2" } }
+    },
+    "FoodListing": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" }, "toko_id": { "type": "string" }, "name": { "type": "string" },
+        "category": { "type": "string" }, "description": { "type": "string", "x-nullable": true },
+        "photo_url": { "type": "string", "x-nullable": true },
+        "initial_price": { "type": "number" }, "minimum_price": { "type": "number" },
+        "current_price": { "type": "number" }, "stock_quantity": { "type": "integer" },
+        "food_safety_notes": { "type": "string" }, "safe_until": { "type": "string", "format": "date-time" },
+        "pickup_start_time": { "type": "string" }, "pickup_end_time": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive", "sold_out", "expired", "pushed_to_community", "discarded"] }
+      }
+    },
+    "CreateListingRequest": {
+      "type": "object", "required": ["name", "category", "initial_price", "minimum_price", "stock_quantity", "safe_until"],
+      "properties": {
+        "name": { "type": "string", "example": "Nasi Box Sisa Expo" },
+        "category": { "type": "string" }, "description": { "type": "string" }, "photo_url": { "type": "string" },
+        "initial_price": { "type": "number", "minimum": 0 }, "minimum_price": { "type": "number", "minimum": 0 },
+        "stock_quantity": { "type": "integer", "minimum": 1 }, "food_safety_notes": { "type": "string" },
+        "safe_until": { "type": "string", "format": "date-time", "example": "2026-09-16T18:00:00" },
+        "pickup_start_time": { "type": "string", "format": "date-time", "example": "2026-09-16T09:00:00" },
+        "pickup_end_time": { "type": "string", "format": "date-time", "example": "2026-09-16T17:00:00" }
+      }
+    },
+    "UpdateListingRequest": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }, "category": { "type": "string" }, "description": { "type": "string" },
+        "photo_url": { "type": "string" }, "initial_price": { "type": "number" }, "minimum_price": { "type": "number" },
+        "stock_quantity": { "type": "integer" }, "food_safety_notes": { "type": "string" },
+        "safe_until": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive", "sold_out", "expired", "pushed_to_community", "discarded"] }
+      }
+    },
+    "PaginatedResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "type": "array", "items": { "type": "object" } },
+        "page": { "type": "integer" }, "limit": { "type": "integer" },
+        "total": { "type": "integer" }, "total_pages": { "type": "integer" }
+      }
+    },
+    "Order": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" }, "listing_id": { "type": "string" }, "user_id": { "type": "string" },
+        "quantity": { "type": "integer" }, "price_at_purchase": { "type": "number" },
+        "total_amount": { "type": "number" },
+        "fulfillment_method": { "type": "string", "enum": ["pickup_mandiri", "diantar_kurir"] },
+        "payment_method": { "type": "string" }, "payment_status": { "type": "string" },
+        "order_status": { "type": "string" }, "confirmation_code": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }, "completed_at": { "type": "string" }
+      }
+    },
+    "CreateOrderRequest": {
+      "type": "object", "required": ["listing_id", "quantity", "fulfillment_method"],
+      "properties": {
+        "listing_id": { "type": "string" }, "quantity": { "type": "integer", "minimum": 1 },
+        "fulfillment_method": { "type": "string", "enum": ["pickup_mandiri", "diantar_kurir"] },
+        "payment_method": { "type": "string", "example": "cash" }
+      }
+    },
+    "ConfirmPaymentRequest": { "type": "object", "properties": { "payment_method": { "type": "string" } } },
+    "Delivery": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" }, "order_id": { "type": "string" },
+        "matching_status": { "type": "string" }, "courier_profile_id": { "type": "string", "x-nullable": true },
+        "pickup_latitude": { "type": "number" }, "pickup_longitude": { "type": "number" },
+        "dropoff_latitude": { "type": "number" }, "dropoff_longitude": { "type": "number" },
+        "trip_status": { "type": "string" }, "delivery_fee": { "type": "number" }
+      }
+    },
+    "CreateCommunityPostRequest": {
+      "type": "object", "required": ["listing_id", "target_category"],
+      "properties": {
+        "listing_id": { "type": "string" },
+        "target_category": { "type": "string", "enum": ["kompos", "pakan_ternak", "lainnya"], "example": "kompos" },
+        "transport_fee": { "type": "number", "minimum": 0 }
+      }
+    },
+    "ClaimCommunityPostRequest": {
+      "type": "object", "required": ["community_post_id"],
+      "properties": { "community_post_id": { "type": "string" } }
+    },
+    "CreateEmergencyAlertRequest": {
+      "type": "object", "required": ["need_type", "target_area", "urgency_level"],
+      "properties": {
+        "need_type": { "type": "string", "example": "Makanan siap saji" },
+        "target_area": { "type": "string", "example": "Kecamatan Sukamaju" },
+        "urgency_level": { "type": "string", "enum": ["rendah", "sedang", "tinggi", "kritis"] },
+        "description": { "type": "string" }
+      }
+    },
+    "RespondEmergencyAlertRequest": {
+      "type": "object", "required": ["alert_id"],
+      "properties": { "alert_id": { "type": "string" }, "availability_note": { "type": "string" } }
+    },
+    "CreateRatingRequest": {
+      "type": "object", "required": ["order_id", "ratee_user_id", "rating_target", "score"],
+      "properties": {
+        "order_id": { "type": "string" }, "ratee_user_id": { "type": "string" },
+        "rating_target": { "type": "string", "enum": ["toko", "kurir", "user"] },
+        "score": { "type": "integer", "minimum": 1, "maximum": 5 }, "review_text": { "type": "string" }
+      }
+    },
+    "CreateReportRequest": {
+      "type": "object", "required": ["reported_entity_type", "reported_entity_id", "reason"],
+      "properties": {
+        "reported_entity_type": { "type": "string", "enum": ["listing", "user", "toko", "kurir", "order", "community_post"] },
+        "reported_entity_id": { "type": "string" }, "reason": { "type": "string" }
+      }
+    },
+    "CreateChatRequest": { "type": "object", "required": ["order_id"], "properties": { "order_id": { "type": "string" } } },
+    "SendMessageRequest": { "type": "object", "required": ["message_text"], "properties": { "message_text": { "type": "string" } } },
+    "AIChatRequest": {
+      "type": "object", "required": ["message", "source"],
+      "properties": {
+        "listing_id": { "type": "string" }, "message": { "type": "string" },
+        "photo_url": { "type": "string" },
+        "source": { "type": "string", "enum": ["dari_listing", "deteksi_kamera"] }
+      }
+    },
+    "AIContinueRequest": { "type": "object", "required": ["message"], "properties": { "message": { "type": "string" } } },
+    "DetectPhotoRequest": { "type": "object", "required": ["photo_url"], "properties": { "photo_url": { "type": "string" } } },
+    "CreatePaymentRequest": {
+      "type": "object", "required": ["order_id", "gross_amt"],
+      "properties": { "order_id": { "type": "string" }, "gross_amt": { "type": "number" } }
+    },
+    "AdminVerifyRequest": {
+      "type": "object", "required": ["status"],
+      "properties": { "status": { "type": "string", "enum": ["approved", "rejected"] } }
+    },
+    "VerifyNGORequest": { "type": "object", "required": ["is_verified"], "properties": { "is_verified": { "type": "boolean" } } },
+    "ReviewReportRequest": {
+      "type": "object", "required": ["status"],
+      "properties": { "status": { "type": "string", "enum": ["ditinjau", "ditindak", "ditolak"] } }
+    }
+  }
 }

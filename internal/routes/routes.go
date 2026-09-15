@@ -2,6 +2,8 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"foodrescue-api/internal/middleware"
 	"foodrescue-api/internal/handlers/auth"
@@ -25,6 +27,8 @@ func Setup(r *gin.Engine) {
 	r.Use(middleware.CORSMiddleware())
 	r.Use(middleware.LoggerMiddleware())
 	r.Use(gin.Recovery())
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	api := r.Group("/api/v1")
 	{
