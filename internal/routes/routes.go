@@ -5,6 +5,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	_ "foodrescue-api/docs"
 	"foodrescue-api/internal/middleware"
 	"foodrescue-api/internal/handlers/auth"
 	"foodrescue-api/internal/handlers/user"
