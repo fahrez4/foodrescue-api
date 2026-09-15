@@ -1,7 +1,6 @@
 package toko
 
 import (
-	"database/sql"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -156,7 +155,7 @@ func GetSalesAnalytics(c *gin.Context) {
 func GetTokoRatings(c *gin.Context) {
 	userID := c.GetString("user_id")
 
-	var tokoUserID sql.NullString
+	var tokoUserID models.NullString
 	err := database.DB.QueryRow("SELECT user_id FROM toko_profiles WHERE user_id = ?", userID).Scan(&tokoUserID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Toko profile not found"})

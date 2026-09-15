@@ -1,26 +1,183 @@
 package models
 
 import (
-	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"time"
 )
+
+// ──────────────── NULL TYPES (JSON-friendly) ────────────────
+
+// NullString mirip NullString tapi di-serialize JSON sebagai null
+type NullString struct {
+	String string
+	Valid  bool
+}
+
+func (n NullString) MarshalJSON() ([]byte, error) {
+	if !n.Valid {
+		return []byte("null"), nil
+	}
+	return json.Marshal(n.String)
+}
+
+func (n *NullString) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		n.Valid = false
+		n.String = ""
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	n.Valid = true
+	n.String = s
+	return nil
+}
+
+func (n *NullString) Scan(value interface{}) error {
+	if value == nil {
+		n.String, n.Valid = "", false
+		return nil
+	}
+	switch v := value.(type) {
+	case []byte:
+		n.String, n.Valid = string(v), true
+	case string:
+		n.String, n.Valid = v, true
+	default:
+		return errors.New("cannot scan type into NullString")
+	}
+	return nil
+}
+
+func (n NullString) Value() (driver.Value, error) {
+	if !n.Valid {
+		return nil, nil
+	}
+	return n.String, nil
+}
+
+// NullFloat64 mirip NullFloat64 tapi di-serialize JSON sebagai null
+type NullFloat64 struct {
+	Float64 float64
+	Valid   bool
+}
+
+func (n NullFloat64) MarshalJSON() ([]byte, error) {
+	if !n.Valid {
+		return []byte("null"), nil
+	}
+	return json.Marshal(n.Float64)
+}
+
+func (n *NullFloat64) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		n.Valid = false
+		n.Float64 = 0
+		return nil
+	}
+	var f float64
+	if err := json.Unmarshal(b, &f); err != nil {
+		return err
+	}
+	n.Valid = true
+	n.Float64 = f
+	return nil
+}
+
+func (n *NullFloat64) Scan(value interface{}) error {
+	if value == nil {
+		n.Float64, n.Valid = 0, false
+		return nil
+	}
+	switch v := value.(type) {
+	case float64:
+		n.Float64, n.Valid = v, true
+	case []byte:
+		var f float64
+		if _, err := fmt.Sscanf(string(v), "%f", &f); err != nil {
+			return err
+		}
+		n.Float64, n.Valid = f, true
+	default:
+		return errors.New("cannot scan type into NullFloat64")
+	}
+	return nil
+}
+
+func (n NullFloat64) Value() (driver.Value, error) {
+	if !n.Valid {
+		return nil, nil
+	}
+	return n.Float64, nil
+}
+
+// NullTime mirip NullTime tapi di-serialize JSON sebagai null
+type NullTime struct {
+	Time  time.Time
+	Valid bool
+}
+
+func (n NullTime) MarshalJSON() ([]byte, error) {
+	if !n.Valid {
+		return []byte("null"), nil
+	}
+	return json.Marshal(n.Time)
+}
+
+func (n *NullTime) Scan(value interface{}) error {
+	if value == nil {
+		n.Time, n.Valid = time.Time{}, false
+		return nil
+	}
+	switch v := value.(type) {
+	case time.Time:
+		n.Time, n.Valid = v, true
+	case []byte:
+		t, err := time.Parse("2006-01-02 15:04:05", string(v))
+		if err == nil {
+			n.Time, n.Valid = t, true
+			return nil
+		}
+		t, err = time.Parse(time.RFC3339, string(v))
+		if err == nil {
+			n.Time, n.Valid = t, true
+			return nil
+		}
+		return err
+	default:
+		return errors.New("cannot scan type into NullTime")
+	}
+	return nil
+}
+
+func (n NullTime) Value() (driver.Value, error) {
+	if !n.Valid {
+		return nil, nil
+	}
+	return n.Time, nil
+}
 
 // ──────────────── USERS ────────────────
 type User struct {
 	ID              string         `json:"id"`
 	Email           string         `json:"email"`
 	FullName        string         `json:"full_name"`
-	PhotoURL        sql.NullString `json:"photo_url"`
-	PhoneNumber     sql.NullString `json:"phone_number"`
+	PhotoURL        NullString `json:"photo_url"`
+	PhoneNumber     NullString `json:"phone_number"`
 	AuthProvider    string         `json:"auth_provider"`
 	Role            string         `json:"role"`
 	IsNGOVerified   bool           `json:"is_ngo_verified"`
 	TrustScore      float64        `json:"trust_score"`
-	Latitude        sql.NullFloat64 `json:"latitude"`
-	Longitude       sql.NullFloat64 `json:"longitude"`
-	AddressText     sql.NullString `json:"address_text"`
+	Latitude        NullFloat64 `json:"latitude"`
+	Longitude       NullFloat64 `json:"longitude"`
+	AddressText     NullString `json:"address_text"`
 	AccountStatus   string         `json:"account_status"`
-	PasswordHash    sql.NullString `json:"-"`
+	PasswordHash    NullString `json:"-"`
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
 }
@@ -42,13 +199,13 @@ type TokoProfile struct {
 	BusinessName       string         `json:"business_name"`
 	BusinessCategory   string         `json:"business_category"`
 	Address            string         `json:"address"`
-	Latitude           sql.NullFloat64 `json:"latitude"`
-	Longitude          sql.NullFloat64 `json:"longitude"`
-	LegalDocumentURL   sql.NullString `json:"legal_document_url"`
-	OperationalHours   sql.NullString `json:"operational_hours"`
+	Latitude           NullFloat64 `json:"latitude"`
+	Longitude          NullFloat64 `json:"longitude"`
+	LegalDocumentURL   NullString `json:"legal_document_url"`
+	OperationalHours   NullString `json:"operational_hours"`
 	VerificationStatus string         `json:"verification_status"`
-	VerifiedByAdminID  sql.NullString `json:"verified_by_admin_id"`
-	VerifiedAt         sql.NullTime   `json:"verified_at"`
+	VerifiedByAdminID  NullString `json:"verified_by_admin_id"`
+	VerifiedAt         NullTime   `json:"verified_at"`
 	AverageRating      float64        `json:"average_rating"`
 	CreatedAt          time.Time      `json:"created_at"`
 	UpdatedAt          time.Time      `json:"updated_at"`
@@ -59,14 +216,14 @@ type CourierProfile struct {
 	ID                  string          `json:"id"`
 	UserID              string          `json:"user_id"`
 	VehicleType         string          `json:"vehicle_type"`
-	IDDocumentURL       sql.NullString  `json:"id_document_url"`
+	IDDocumentURL       NullString  `json:"id_document_url"`
 	VerificationStatus  string          `json:"verification_status"`
-	VerifiedByAdminID   sql.NullString  `json:"verified_by_admin_id"`
-	VerifiedAt          sql.NullTime    `json:"verified_at"`
+	VerifiedByAdminID   NullString  `json:"verified_by_admin_id"`
+	VerifiedAt          NullTime    `json:"verified_at"`
 	IsOnline            bool            `json:"is_online"`
-	CurrentLatitude     sql.NullFloat64 `json:"current_latitude"`
-	CurrentLongitude    sql.NullFloat64 `json:"current_longitude"`
-	LastLocationUpdate  sql.NullTime    `json:"last_location_update"`
+	CurrentLatitude     NullFloat64 `json:"current_latitude"`
+	CurrentLongitude    NullFloat64 `json:"current_longitude"`
+	LastLocationUpdate  NullTime    `json:"last_location_update"`
 	AverageRating       float64         `json:"average_rating"`
 	TotalEarnings       float64         `json:"total_earnings"`
 	CreatedAt           time.Time       `json:"created_at"`
@@ -79,16 +236,16 @@ type FoodListing struct {
 	TokoID          string         `json:"toko_id"`
 	Name            string         `json:"name"`
 	Category        string         `json:"category"`
-	Description     sql.NullString `json:"description"`
-	PhotoURL        sql.NullString `json:"photo_url"`
+	Description     NullString `json:"description"`
+	PhotoURL        NullString `json:"photo_url"`
 	InitialPrice    float64        `json:"initial_price"`
 	MinimumPrice    float64        `json:"minimum_price"`
 	CurrentPrice    float64        `json:"current_price"`
 	StockQuantity   int            `json:"stock_quantity"`
-	FoodSafetyNotes sql.NullString `json:"food_safety_notes"`
+	FoodSafetyNotes NullString `json:"food_safety_notes"`
 	SafeUntil       time.Time      `json:"safe_until"`
-	PickupStartTime sql.NullTime   `json:"pickup_start_time"`
-	PickupEndTime   sql.NullTime   `json:"pickup_end_time"`
+	PickupStartTime NullTime   `json:"pickup_start_time"`
+	PickupEndTime   NullTime   `json:"pickup_end_time"`
 	Status          string         `json:"status"`
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
@@ -108,23 +265,23 @@ type Order struct {
 	OrderStatus       string        `json:"order_status"`
 	ConfirmationCode  string        `json:"confirmation_code"`
 	CreatedAt         time.Time     `json:"created_at"`
-	CompletedAt       sql.NullTime  `json:"completed_at"`
+	CompletedAt       NullTime  `json:"completed_at"`
 }
 
 // ──────────────── DELIVERIES ────────────────
 type Delivery struct {
 	ID                       string         `json:"id"`
 	OrderID                  string         `json:"order_id"`
-	CourierID                sql.NullString `json:"courier_id"`
+	CourierID                NullString `json:"courier_id"`
 	MatchingStatus           string         `json:"matching_status"`
-	PickupLatitude           sql.NullFloat64 `json:"pickup_latitude"`
-	PickupLongitude          sql.NullFloat64 `json:"pickup_longitude"`
-	DropoffLatitude          sql.NullFloat64 `json:"dropoff_latitude"`
-	DropoffLongitude         sql.NullFloat64 `json:"dropoff_longitude"`
-	TripStatus               sql.NullString `json:"trip_status"`
-	PickupConfirmationCode   sql.NullString `json:"pickup_confirmation_code"`
-	DropoffConfirmationCode  sql.NullString `json:"dropoff_confirmation_code"`
-	OfferExpiresAt           sql.NullTime   `json:"offer_expires_at"`
+	PickupLatitude           NullFloat64 `json:"pickup_latitude"`
+	PickupLongitude          NullFloat64 `json:"pickup_longitude"`
+	DropoffLatitude          NullFloat64 `json:"dropoff_latitude"`
+	DropoffLongitude         NullFloat64 `json:"dropoff_longitude"`
+	TripStatus               NullString `json:"trip_status"`
+	PickupConfirmationCode   NullString `json:"pickup_confirmation_code"`
+	DropoffConfirmationCode  NullString `json:"dropoff_confirmation_code"`
+	OfferExpiresAt           NullTime   `json:"offer_expires_at"`
 	DeliveryFee              float64        `json:"delivery_fee"`
 	CreatedAt                time.Time      `json:"created_at"`
 	UpdatedAt                time.Time      `json:"updated_at"`
@@ -138,9 +295,9 @@ type CommunityPost struct {
 	TargetCategory  string         `json:"target_category"`
 	TransportFee    float64        `json:"transport_fee"`
 	ClaimStatus     string         `json:"claim_status"`
-	ClaimedByUserID sql.NullString `json:"claimed_by_user_id"`
-	ClaimedAt       sql.NullTime   `json:"claimed_at"`
-	CompletedAt     sql.NullTime   `json:"completed_at"`
+	ClaimedByUserID NullString `json:"claimed_by_user_id"`
+	ClaimedAt       NullTime   `json:"claimed_at"`
+	CompletedAt     NullTime   `json:"completed_at"`
 	CreatedAt       time.Time      `json:"created_at"`
 }
 
@@ -160,7 +317,7 @@ type EmergencyAlertResponse struct {
 	ID               string         `json:"id"`
 	AlertID          string         `json:"alert_id"`
 	TokoID           string         `json:"toko_id"`
-	AvailabilityNote sql.NullString `json:"availability_note"`
+	AvailabilityNote NullString `json:"availability_note"`
 	ResponseStatus   string         `json:"response_status"`
 	CreatedAt        time.Time      `json:"created_at"`
 }
@@ -192,14 +349,14 @@ type Recipe struct {
 type AIConversation struct {
 	ID                string         `json:"id"`
 	UserID            string         `json:"user_id"`
-	ListingID         sql.NullString `json:"listing_id"`
+	ListingID         NullString `json:"listing_id"`
 	SourceType        string         `json:"source_type"`
-	PhotoURL          sql.NullString `json:"photo_url"`
-	DetectedFoodName  sql.NullString `json:"detected_food_name"`
-	EstimatedCalories sql.NullFloat64 `json:"estimated_calories"`
-	EstimatedProteinG sql.NullFloat64 `json:"estimated_protein_g"`
-	EstimatedCarbsG   sql.NullFloat64 `json:"estimated_carbs_g"`
-	EstimatedFatG     sql.NullFloat64 `json:"estimated_fat_g"`
+	PhotoURL          NullString `json:"photo_url"`
+	DetectedFoodName  NullString `json:"detected_food_name"`
+	EstimatedCalories NullFloat64 `json:"estimated_calories"`
+	EstimatedProteinG NullFloat64 `json:"estimated_protein_g"`
+	EstimatedCarbsG   NullFloat64 `json:"estimated_carbs_g"`
+	EstimatedFatG     NullFloat64 `json:"estimated_fat_g"`
 	CreatedAt         time.Time      `json:"created_at"`
 }
 
@@ -247,8 +404,8 @@ type Report struct {
 	ReportedEntityID  string         `json:"reported_entity_id"`
 	Reason            string         `json:"reason"`
 	ReportStatus      string         `json:"report_status"`
-	ReviewedByAdminID sql.NullString `json:"reviewed_by_admin_id"`
-	ReviewedAt        sql.NullTime   `json:"reviewed_at"`
+	ReviewedByAdminID NullString `json:"reviewed_by_admin_id"`
+	ReviewedAt        NullTime   `json:"reviewed_at"`
 	CreatedAt         time.Time      `json:"created_at"`
 }
 

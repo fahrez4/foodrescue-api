@@ -1,7 +1,6 @@
 package order
 
 import (
-	"database/sql"
 	"fmt"
 	"math"
 	"math/rand"
@@ -60,7 +59,7 @@ func CreateOrder(c *gin.Context) {
 		 fulfillment_method, payment_method, payment_status, order_status, confirmation_code, created_at)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'unpaid', 'menunggu_pickup', ?, ?)`,
 		orderID, req.ListingID, userID, req.Quantity, priceAtPurchase, totalAmount,
-		req.FulfillmentMethod, sql.NullString{String: req.PaymentMethod, Valid: req.PaymentMethod != ""},
+		req.FulfillmentMethod, models.NullString{String: req.PaymentMethod, Valid: req.PaymentMethod != ""},
 		code, time.Now(),
 	)
 	if err != nil {
@@ -77,7 +76,7 @@ func CreateOrder(c *gin.Context) {
 
 	if req.FulfillmentMethod == "diantar_kurir" {
 		deliveryID := uuid.New().String()
-		var pickupLat, pickupLng, dropoffLat, dropoffLng sql.NullFloat64
+		var pickupLat, pickupLng, dropoffLat, dropoffLng models.NullFloat64
 		var pickupCode, dropoffCode string
 		pickupCode = generateConfirmationCode()
 		dropoffCode = generateConfirmationCode()
@@ -212,7 +211,7 @@ func FindNearestCourier(deliveryID, tokoID string) {
 }
 
 func findNearestCourier(deliveryID, tokoID string) {
-	var lat, lng sql.NullFloat64
+	var lat, lng models.NullFloat64
 	database.DB.QueryRow("SELECT latitude, longitude FROM toko_profiles WHERE id = ?", tokoID).Scan(&lat, &lng)
 
 	rows, err := database.DB.Query(

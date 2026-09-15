@@ -2,7 +2,6 @@ package ai
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -157,11 +156,11 @@ Gunakan perkiraan wajar per porsi. Jika tidak jelas, tulis food_name:"tidak jela
 		`INSERT INTO ai_conversations (id, user_id, source_type, photo_url, detected_food_name,
 		 estimated_calories, estimated_protein_g, estimated_carbs_g, estimated_fat_g, created_at)
 		 VALUES (?, ?, 'deteksi_kamera', ?, ?, ?, ?, ?, ?, ?)`,
-		convID, userID, req.PhotoURL, sql.NullString{String: det.FoodName, Valid: det.FoodName != ""},
-		sql.NullFloat64{Float64: det.EstimatedCalories, Valid: true},
-		sql.NullFloat64{Float64: det.EstimatedProteinG, Valid: true},
-		sql.NullFloat64{Float64: det.EstimatedCarbsG, Valid: true},
-		sql.NullFloat64{Float64: det.EstimatedFatG, Valid: true},
+		convID, userID, req.PhotoURL, models.NullString{String: det.FoodName, Valid: det.FoodName != ""},
+		models.NullFloat64{Float64: det.EstimatedCalories, Valid: true},
+		models.NullFloat64{Float64: det.EstimatedProteinG, Valid: true},
+		models.NullFloat64{Float64: det.EstimatedCarbsG, Valid: true},
+		models.NullFloat64{Float64: det.EstimatedFatG, Valid: true},
 		time.Now(),
 	)
 	if err != nil {

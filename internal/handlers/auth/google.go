@@ -141,7 +141,7 @@ func GoogleRegister(c *gin.Context) {
 		`INSERT INTO users (id, email, full_name, photo_url, phone_number, auth_provider, role, is_ngo_verified, trust_score, account_status, created_at, updated_at)
 		 VALUES (?, ?, ?, ?, ?, 'google', ?, FALSE, 5.00, ?, ?, ?)`,
 		id, info.Email, info.Name, info.Picture,
-		sql.NullString{String: req.PhoneNumber, Valid: req.PhoneNumber != ""},
+		models.NullString{String: req.PhoneNumber, Valid: req.PhoneNumber != ""},
 		req.Role, accountStatus, now, now,
 	)
 	if err != nil {
@@ -173,7 +173,7 @@ func GoogleRegister(c *gin.Context) {
 		ID:            id,
 		Email:         info.Email,
 		FullName:      info.Name,
-		PhotoURL:      sql.NullString{String: info.Picture, Valid: info.Picture != ""},
+		PhotoURL:      models.NullString{String: info.Picture, Valid: info.Picture != ""},
 		AuthProvider:  "google",
 		Role:          req.Role,
 		TrustScore:    5.00,

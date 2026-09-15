@@ -14,6 +14,7 @@ CREATE TABLE users (
     photo_url           VARCHAR(500)    NULL,
     phone_number        VARCHAR(20)     NULL,
     auth_provider       ENUM('google', 'email_password') NOT NULL DEFAULT 'email_password',
+    password_hash       VARCHAR(255)    NULL,
     role                ENUM('user', 'toko', 'kurir', 'admin') NOT NULL,
     is_ngo_verified     BOOLEAN         NOT NULL DEFAULT FALSE,
     trust_score         DECIMAL(3,2)    NOT NULL DEFAULT 5.00,

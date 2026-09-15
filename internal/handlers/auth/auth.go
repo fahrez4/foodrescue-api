@@ -37,10 +37,10 @@ func Register(c *gin.Context) {
 		accountStatus = "pending_verification"
 	}
 
-	var passwordHash sql.NullString
+	var passwordHash models.NullString
 	if req.Password != "" {
 		hash, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-		passwordHash = sql.NullString{String: string(hash), Valid: true}
+		passwordHash = models.NullString{String: string(hash), Valid: true}
 	}
 
 	authProvider := "email_password"
@@ -51,7 +51,7 @@ func Register(c *gin.Context) {
 	_, err := database.DB.Exec(
 		`INSERT INTO users (id, email, full_name, phone_number, auth_provider, role, trust_score, account_status, password_hash, created_at, updated_at)
 		 VALUES (?, ?, ?, ?, ?, ?, 5.00, ?, ?, ?, ?)`,
-		id, req.Email, req.FullName, sql.NullString{String: req.PhoneNumber, Valid: req.PhoneNumber != ""},
+		id, req.Email, req.FullName, models.NullString{String: req.PhoneNumber, Valid: req.PhoneNumber != ""},
 		authProvider, req.Role, accountStatus, passwordHash, now, now,
 	)
 	if err != nil {
@@ -102,7 +102,7 @@ func Login(c *gin.Context) {
 	}
 
 	var user models.User
-	var passwordHash sql.NullString
+	var passwordHash models.NullString
 	err := database.DB.QueryRow(
 		`SELECT id, email, full_name, photo_url, phone_number, auth_provider, role, is_ngo_verified,
 		        trust_score, latitude, longitude, address_text, account_status, password_hash, created_at, updated_at

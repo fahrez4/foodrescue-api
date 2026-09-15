@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"database/sql"
 	"net/http"
 	"time"
 
@@ -14,11 +13,11 @@ import (
 func ListPendingVerifications(c *gin.Context) {
 	type PendingUser struct {
 		models.User
-		BusinessName      sql.NullString `json:"business_name"`
-		BusinessCategory  sql.NullString `json:"business_category"`
-		LegalDocumentURL  sql.NullString `json:"legal_document_url"`
-		VehicleType       sql.NullString `json:"vehicle_type"`
-		IDDocumentURL     sql.NullString `json:"id_document_url"`
+		BusinessName      models.NullString `json:"business_name"`
+		BusinessCategory  models.NullString `json:"business_category"`
+		LegalDocumentURL  models.NullString `json:"legal_document_url"`
+		VehicleType       models.NullString `json:"vehicle_type"`
+		IDDocumentURL     models.NullString `json:"id_document_url"`
 	}
 
 	rows, err := database.DB.Query(

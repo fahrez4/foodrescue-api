@@ -1,7 +1,6 @@
 package listing
 
 import (
-	"database/sql"
 	"math"
 	"net/http"
 	"strconv"
@@ -39,14 +38,14 @@ func CreateListing(c *gin.Context) {
 	id := uuid.New().String()
 	now := time.Now()
 
-	var pickupStart, pickupEnd sql.NullTime
+	var pickupStart, pickupEnd models.NullTime
 	if req.PickupStartTime != "" {
 		t, _ := time.Parse("2006-01-02T15:04:05", req.PickupStartTime)
-		pickupStart = sql.NullTime{Time: t, Valid: true}
+		pickupStart = models.NullTime{Time: t, Valid: true}
 	}
 	if req.PickupEndTime != "" {
 		t, _ := time.Parse("2006-01-02T15:04:05", req.PickupEndTime)
-		pickupEnd = sql.NullTime{Time: t, Valid: true}
+		pickupEnd = models.NullTime{Time: t, Valid: true}
 	}
 
 	_, err = database.DB.Exec(
@@ -54,10 +53,10 @@ func CreateListing(c *gin.Context) {
 		 current_price, stock_quantity, food_safety_notes, safe_until, pickup_start_time, pickup_end_time, status, created_at, updated_at)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
 		id, tokoID, req.Name, req.Category,
-		sql.NullString{String: req.Description, Valid: req.Description != ""},
-		sql.NullString{String: req.PhotoURL, Valid: req.PhotoURL != ""},
+		models.NullString{String: req.Description, Valid: req.Description != ""},
+		models.NullString{String: req.PhotoURL, Valid: req.PhotoURL != ""},
 		req.InitialPrice, req.MinimumPrice, req.InitialPrice, req.StockQuantity,
-		sql.NullString{String: req.FoodSafetyNotes, Valid: req.FoodSafetyNotes != ""},
+		models.NullString{String: req.FoodSafetyNotes, Valid: req.FoodSafetyNotes != ""},
 		safeUntil, pickupStart, pickupEnd, now, now,
 	)
 	if err != nil {
