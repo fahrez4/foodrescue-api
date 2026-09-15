@@ -1,88 +1,135 @@
-# FoodRescue REST API
+# Food Rescue — API (Go)
 
-REST API backend untuk aplikasi mobile Flutter **FoodRescue** menggunakan bahasa **Go (Golang)** dan **Gin Framework**, lengkap dengan operasi **CRUD** penuh dan dokumentasi interaktif **Swagger UI**.
+Backend REST API untuk platform Food Rescue (User, Toko, Kurir, Admin).
 
----
+## Tech Stack
+- Go 1.22 + Gin Framework
+- MySQL 8.0+ (Hostinger, dikelola via DBeaver)
+- JWT autentikasi (`golang-jwt/jwt/v4`)
+- Google Sign-In via `tokeninfo` endpoint (tanpa Client ID)
+- Gemini API — Asisten AI nutrisi & deteksi via kamera
+- Midtrans Snap — Payment Gateway (QRIS, e-wallet, Virtual Account)
 
-## 🛠️ Tech Stack & Dependencies
+## Endpoint Lengkap
 
-- **Language & Framework**: Go (`1.27+`), Gin Framework (`github.com/gin-gonic/gin`)
-- **Documentation**: Swagger UI (`github.com/swaggo/gin-swagger`, `github.com/swaggo/files`, `github.com/swaggo/swag`)
-- **Database**: MySQL Remote Hostinger (`github.com/go-sql-driver/mysql`)
-- **Authentication**: JWT Bearer Token (`github.com/golang-jwt/jwt/v5`)
-- **Identifier**: UUID v4 (`github.com/google/uuid`)
-- **Password Security**: Bcrypt (`golang.org/x/crypto/bcrypt`)
+### Public (tanpa auth)
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| GET | `/api/v1/health` | Health check |
+| POST | `/api/v1/auth/register` | Register (email+password) |
+| POST | `/api/v1/auth/login` | Login |
+| POST | `/api/v1/auth/google` | Login via Google Sign-In |
+| POST | `/api/v1/auth/google/register` | Register via Google |
+| GET | `/api/v1/listings` | Browse listing (filter, paginate) |
+| GET | `/api/v1/listings/:id` | Detail listing |
+| GET | `/api/v1/tokos` | List toko terverifikasi |
+| GET | `/api/v1/tokos/:id` | Detail toko |
 
----
+### Authenticated (perlu JWT Bearer)
+| Method | Endpoint | Role | Fungsi |
+|--------|----------|------|--------|
+| GET | `/api/v1/auth/profile` | all | Profil user |
+| PUT | `/api/v1/auth/profile` | all | Update profil |
 
-## 📁 Struktur Direktori
+#### Toko
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| GET | `/api/v1/tokos/me/profile` | Profil toko saya |
+| PUT | `/api/v1/tokos/me/profile` | Update profil toko |
+| GET | `/api/v1/tokos/me/analytics` | Analisis penjualan |
+| GET | `/api/v1/tokos/me/ratings` | Lihat rating |
+| POST | `/api/v1/listings` | Buat listing baru |
+| GET | `/api/v1/listings/me/listings` | Listing saya |
+| PUT | `/api/v1/listings/:id` | Update listing |
+| DELETE | `/api/v1/listings/:id` | Hapus listing |
 
-```text
-foodrescue-api/
-├── main.go
-├── config/
-│   └── database.go
-├── controllers/
-│   ├── auth_controller.go
-│   ├── food_controller.go
-│   └── claim_controller.go
-├── docs/
-│   ├── docs.go
-│   ├── swagger.json
-│   └── swagger.yaml
-├── middlewares/
-│   └── auth_middleware.go
-├── models/
-│   └── response.go
-├── go.mod
-├── go.sum
-└── .gitignore
+#### User
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| GET | `/api/v1/users/:id` | Profil user |
+| GET | `/api/v1/users/me/impact` | Dampak personal |
+| POST | `/api/v1/users/payment-methods` | Daftar metode bayar |
+| GET | `/api/v1/users/payment-methods` | Daftar metode bayar |
+| POST | `/api/v1/orders` | Buat order |
+| GET | `/api/v1/orders/me` | Riwayat pesanan |
+| GET | `/api/v1/orders/:id` | Detail pesanan |
+| POST | `/api/v1/orders/:id/cancel` | Batalkan pesanan |
+| POST | `/api/v1/orders/:id/confirm-payment` | Konfirmasi bayar manual |
+
+#### Kurir
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| GET | `/api/v1/kurirs/me/profile` | Profil kurir |
+| PUT | `/api/v1/kurirs/me/profile` | Update profil |
+| PATCH | `/api/v1/kurirs/me/online` | Toggle online/offline |
+| PUT | `/api/v1/kurirs/me/location` | Update lokasi |
+| GET | `/api/v1/kurirs/deliveries/pending` | Tawaran masuk |
+| POST | `/api/v1/kurirs/deliveries/accept` | Terima order |
+| PUT | `/api/v1/kurirs/deliveries/trip` | Update status perjalanan |
+| POST | `/api/v1/kurirs/deliveries/confirm-pickup` | Konfirmasi ambil barang |
+| POST | `/api/v1/kurirs/deliveries/confirm-dropoff` | Konfirmasi antar barang |
+| GET | `/api/v1/kurirs/me/earnings` | Riwayat pendapatan |
+
+#### Community
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| GET | `/api/v1/community/` | Daftar post komunitas |
+| POST | `/api/v1/community/` | Buat post (toko) |
+| POST | `/api/v1/community/claim` | Klaim makanan (user) |
+| POST | `/api/v1/community/:id/confirm` | Konfirmasi pengambilan |
+
+#### Emergency
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| GET | `/api/v1/emergency/alerts` | Daftar alert aktif |
+| GET | `/api/v1/emergency/alerts/:id/responses` | Respons toko |
+| POST | `/api/v1/emergency/alerts` | Buat alert (NGO) |
+| POST | `/api/v1/emergency/responses` | Respon alert (toko) |
+
+#### Ratings, Reports, Chat, AI
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| POST | `/api/v1/ratings/` | Beri rating |
+| GET | `/api/v1/ratings/:id` | Lihat rating user |
+| GET | `/api/v1/ratings/me/given` | Rating yang saya berikan |
+| POST | `/api/v1/reports/` | Buat laporan |
+| GET | `/api/v1/reports/me` | Laporan saya |
+| POST | `/api/v1/chats/` | Buat chat |
+| GET | `/api/v1/chats/me` | Daftar chat saya |
+| GET | `/api/v1/chats/:id/messages` | Lihat pesan |
+| POST | `/api/v1/chats/:id/messages` | Kirim pesan |
+| POST | `/api/v1/ai/chat` | Chat AI dari listing |
+| POST | `/api/v1/ai/detect` | Deteksi nutrisi via foto |
+| GET | `/api/v1/ai/conversations/:id/messages` | Riwayat chat AI |
+| POST | `/api/v1/ai/conversations/:id/messages` | Lanjut chat AI |
+
+#### Payment
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| POST | `/api/v1/payments/create` | Buat transaksi Midtrans Snap |
+| POST | `/api/v1/payments/notification` | Webhook notifikasi Midtrans |
+
+#### Admin
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| GET | `/api/v1/admin/dashboard` | Dashboard analitik |
+| GET | `/api/v1/admin/users` | Daftar user |
+| GET | `/api/v1/admin/verifications` | Menunggu verifikasi |
+| POST | `/api/v1/admin/verifications/:id` | Approve/reject |
+| PUT | `/api/v1/admin/users/:id/deactivate` | Nonaktifkan user |
+| DELETE | `/api/v1/admin/users/:id` | Hapus user |
+| PUT | `/api/v1/admin/users/:id/verify-ngo` | Verifikasi NGO |
+| GET | `/api/v1/admin/reports` | Daftar laporan |
+| PUT | `/api/v1/admin/reports/:id` | Review laporan |
+
+## Setup
+```bash
+cp .env.example .env   # isi kredensial
+go mod tidy
+go run cmd/api/main.go
 ```
 
----
-
-## 📖 Dokumentasi Interaktif Swagger UI
-
-Setelah server dijalankan, buka browser dan akses URL berikut:
-👉 **[http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html)**
-
-Untuk endpoint terproteksi (`BearerAuth`), klik tombol **Authorize** di pojok kanan atas Swagger UI, lalu masukkan:
-```text
-Bearer <token_jwt_hasil_login>
+## Deploy (Docker)
+```bash
+docker-compose up -d --build
 ```
-
----
-
-## 🚀 Menjalankan Aplikasi
-
-1. **Unduh dependencies**:
-   ```bash
-   go mod tidy
-   ```
-
-2. **Generate / Re-generate Swagger**:
-   ```bash
-   swag init
-   ```
-
-3. **Jalankan server**:
-   ```bash
-   go run main.go
-   ```
-   Server berjalan di port `:8080` (`http://localhost:8080`).
-
----
-
-## 📡 Matriks Endpoint API & Status CRUD
-
-| Operasi CRUD | Method | Endpoint | Akses | Keterangan |
-|---|---|---|---|---|
-| **CREATE (User)** | `POST` | `/api/v1/register` | Public | Registrasi pengguna baru |
-| **READ (Auth)** | `POST` | `/api/v1/login` | Public | Login & peroleh JWT 7 hari |
-| **READ (All)** | `GET` | `/api/v1/foods` | Public | Daftar surplus makanan aktif |
-| **READ (Detail)** | `GET` | `/api/v1/foods/:id` | Public | Detail makanan berdasarkan ID |
-| **READ (My Foods)** | `GET` | `/api/v1/my-foods` | Protected | Riwayat makanan donasi milik saya |
-| **CREATE (Food)** | `POST` | `/api/v1/foods` | Protected | Posting donasi surplus makanan baru |
-| **UPDATE (Food)** | `PUT` | `/api/v1/foods/:id` | Protected | Edit donasi makanan (hanya pemilik & status `available`) |
-| **DELETE (Food)** | `DELETE` | `/api/v1/foods/:id` | Protected | Hapus postingan donasi (hanya pemilik & status `available`) |
-| **ACTION (Claim)** | `POST` | `/api/v1/foods/:id/claim` | Protected | Klaim makanan (Database Transaction & `FOR UPDATE`) |

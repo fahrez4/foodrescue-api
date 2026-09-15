@@ -1,4 +1,4 @@
-FROM golang:alpine AS builder
+FROM golang:1.22-alpine AS builder
 
 RUN apk update && apk add --no-cache git ca-certificates tzdata
 
@@ -13,7 +13,6 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-w -s" \
     -o /app/foodrescue-api .
 
-
 FROM alpine:3.20
 
 RUN apk --no-cache add ca-certificates tzdata curl && \
@@ -27,9 +26,9 @@ RUN chown -R appuser:appgroup /app
 
 USER appuser
 
-EXPOSE 8091
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8091/ || exit 1
+    CMD curl -f http://localhost:8080/api/v1/health || exit 1
 
 ENTRYPOINT ["/app/foodrescue-api"]

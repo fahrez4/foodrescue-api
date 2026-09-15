@@ -1,26 +1,23 @@
 services:
-  api:
+  foodrescue-api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: foodrescue-api
+    container_name: foodrescue-api-v2
     restart: unless-stopped
     ports:
-      - "${PORT:-8091}:8091"
+      - "${PORT:-8097}:8080"
     environment:
-      - PORT=${PORT:-8091}
-      - GIN_MODE=${GIN_MODE:-release}
-      - DB_DSN=${DB_DSN}
-      - JWT_SECRET=${JWT_SECRET}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8091/"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+      - APP_ENV=production
+      - APP_PORT=8080
+      - DB_DSN=u278523899_FoodRescue123:FoodRescue123@tcp(153.92.15.57:3306)/u278523899_foodrescue?parseTime=true&loc=Local
+      - JWT_SECRET=${JWT_SECRET:-foodrescue_secret_key_2024_secure_and_safe}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-AQ.Ab8RN6LI6lcDeLfk9ToUcBEw9HqX77iMbhOcyvnEB_YiVIPvRA}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - PAYMENT_GATEWAY_SERVER_KEY=${MB_SERVER_KEY:-}
     networks:
       - foodrescue-net
 
 networks:
   foodrescue-net:
-    driver: bridge
+    external: true
