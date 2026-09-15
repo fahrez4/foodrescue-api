@@ -17,7 +17,7 @@ import (
 	"foodrescue-api/internal/models"
 )
 
-const geminiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+const geminiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
 
 const disclaimer = "Disclaimer: Hasil deteksi & jawaban AI ini adalah estimasi dan informasi umum (AI menebak dari tampilan visual, bukan pengukuran presisi), bukan saran medis/gizi profesional."
 
