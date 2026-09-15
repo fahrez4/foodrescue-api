@@ -69,6 +69,7 @@ func Setup(r *gin.Engine) {
 
 			authed := tokoGroup.Group("", middleware.AuthMiddleware(), middleware.RoleGuard("toko"))
 			{
+				authed.POST("", toko.CreateTokoProfile)
 				authed.GET("/me/profile", toko.GetMyTokoProfile)
 				authed.PUT("/me/profile", toko.UpdateTokoProfile)
 				authed.GET("/me/analytics", toko.GetSalesAnalytics)

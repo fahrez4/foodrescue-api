@@ -4,10 +4,61 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"foodrescue-api/internal/database"
 	"foodrescue-api/internal/models"
 )
+
+func CreateTokoProfile(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	var req struct {
+		BusinessName     string  `json:"business_name"`
+		BusinessCategory string  `json:"business_category"`
+		Address          string  `json:"address"`
+		LegalDocumentURL string  `json:"legal_document_url"`
+		OperationalHours string  `json:"operational_hours"`
+		Latitude         float64 `json:"latitude"`
+		Longitude        float64 `json:"longitude"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.BusinessName == "" || req.BusinessCategory == "" || req.Address == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "business_name, business_category, and address are required"})
+		return
+	}
+
+	var exists int
+	err := database.DB.QueryRow(
+		"SELECT COUNT(*) FROM toko_profiles WHERE user_id = ?", userID,
+	).Scan(&exists)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	if exists > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "Toko profile already exists"})
+		return
+	}
+
+	id := uuid.New().String()
+	_, err = database.DB.Exec(
+		`INSERT INTO toko_profiles (id, user_id, business_name, business_category, address,
+		        latitude, longitude, legal_document_url, operational_hours, verification_status)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+		id, userID, req.BusinessName, req.BusinessCategory, req.Address,
+		req.Latitude, req.Longitude, req.LegalDocumentURL, req.OperationalHours,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create toko profile"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"id": id, "message": "Toko profile created, awaiting admin verification"})
+}
 
 func GetMyTokoProfile(c *gin.Context) {
 	userID := c.GetString("user_id")
