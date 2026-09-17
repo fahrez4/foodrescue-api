@@ -20,6 +20,21 @@ func CreateRating(c *gin.Context) {
 		return
 	}
 
+	// Satu ulasan per pesanan per target (toko/kurir). Tolak duplikat.
+	var existing int
+	database.DB.QueryRow(
+		"SELECT COUNT(*) FROM ratings WHERE rater_user_id = ? AND order_id = ? AND rating_target = ?",
+		userID, req.OrderID, req.RatingTarget,
+	).Scan(&existing)
+	if existing > 0 {
+		c.JSON(http.StatusConflict, gin.H{
+			"error":   "Ulasan untuk pesanan ini sudah pernah dikirim",
+			"code":    "already_rated",
+			"message": "Ulasan hanya dapat dikirim satu kali.",
+		})
+		return
+	}
+
 	id := uuid.New().String()
 	_, err := database.DB.Exec(
 		`INSERT INTO ratings (id, order_id, rater_user_id, ratee_user_id, rating_target, score, review_text, created_at)

@@ -21,6 +21,16 @@ type OrderView struct {
 	Listing       *models.FoodListing `json:"listing"`
 	PickupAddress string              `json:"pickup_address"`
 	TripStatus    string              `json:"trip_status"`
+	Courier       *CourierBrief       `json:"courier,omitempty"`
+}
+
+// CourierBrief — data kurir yang menangani pengiriman sebuah pesanan.
+type CourierBrief struct {
+	UserID             string  `json:"user_id"`
+	Name               string  `json:"name"`
+	VehicleType        string  `json:"vehicle_type"`
+	VerificationStatus string  `json:"verification_status"`
+	AverageRating      float64 `json:"average_rating"`
 }
 
 // TokoOrderView — ringkasan pesanan masuk untuk kasir toko.
@@ -171,6 +181,19 @@ func enrichOrderView(order models.Order) OrderView {
 		"SELECT COALESCE(trip_status, '') FROM deliveries WHERE order_id = ?", order.ID,
 	).Scan(&trip); err == nil {
 		v.TripStatus = trip
+	}
+
+	var cb CourierBrief
+	err = database.DB.QueryRow(
+		`SELECT cp.user_id, COALESCE(u.full_name,''), COALESCE(cp.vehicle_type,''),
+		        COALESCE(cp.verification_status,''), COALESCE(cp.average_rating,0)
+		   FROM deliveries d
+		   JOIN courier_profiles cp ON d.courier_id = cp.id
+		   JOIN users u ON cp.user_id = u.id
+		  WHERE d.order_id = ?`, order.ID,
+	).Scan(&cb.UserID, &cb.Name, &cb.VehicleType, &cb.VerificationStatus, &cb.AverageRating)
+	if err == nil {
+		v.Courier = &cb
 	}
 
 	return v

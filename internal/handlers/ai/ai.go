@@ -17,7 +17,13 @@ import (
 	"foodrescue-api/internal/models"
 )
 
-const geminiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
+const geminiBase = "https://generativelanguage.googleapis.com/v1beta/models/"
+
+// Model dicoba berurutan sampai ada yang tersedia untuk API key terkait.
+var geminiModels = []string{
+	"gemini-3.6-flash",
+	"gemini-flash-latest",
+}
 
 const disclaimer = "Disclaimer: Hasil deteksi & jawaban AI ini adalah estimasi dan informasi umum (AI menebak dari tampilan visual, bukan pengukuran presisi), bukan saran medis/gizi profesional."
 
@@ -192,11 +198,11 @@ Gunakan perkiraan wajar per porsi. Jika tidak jelas, tulis food_name:"tidak jela
 	c.JSON(http.StatusOK, gin.H{
 		"conversation_id": convID,
 		"detection": gin.H{
-			"food_name":          det.FoodName,
-			"estimated_calories": det.EstimatedCalories,
+			"food_name":           det.FoodName,
+			"estimated_calories":  det.EstimatedCalories,
 			"estimated_protein_g": det.EstimatedProteinG,
-			"estimated_carbs_g":  det.EstimatedCarbsG,
-			"estimated_fat_g":    det.EstimatedFatG,
+			"estimated_carbs_g":   det.EstimatedCarbsG,
+			"estimated_fat_g":     det.EstimatedFatG,
 		},
 		"disclaimer": disclaimer,
 	})
@@ -278,28 +284,40 @@ func callGemini(prompt string, inlineData *geminiData) (string, error) {
 		Contents: []geminiContent{{Parts: parts}},
 	})
 
-	url := geminiEndpoint + "?key=" + config.AppConfig.GeminiAPIKey
-	resp, err := http.Post(url, "application/json", bytes.NewReader(body))
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
+	var lastErr error
+	for _, model := range geminiModels {
+		url := geminiBase + model + ":generateContent?key=" + config.AppConfig.GeminiAPIKey
+		resp, err := http.Post(url, "application/json", bytes.NewReader(body))
+		if err != nil {
+			lastErr = err
+			continue
+		}
 
-	respBody, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("gemini error %d: %s", resp.StatusCode, string(respBody))
+		respBody, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			lastErr = fmt.Errorf("gemini %s error %d: %s", model, resp.StatusCode, string(respBody))
+			// 404 = model tidak tersedia untuk key ini, coba model berikutnya.
+			// 429/401/403 juga dicoba ke model lain sebelum menyerah.
+			continue
+		}
+
+		var result geminiResponse
+		if err := json.Unmarshal(respBody, &result); err != nil {
+			lastErr = err
+			continue
+		}
+
+		if len(result.Candidates) == 0 || len(result.Candidates[0].Content.Parts) == 0 {
+			lastErr = fmt.Errorf("empty candidates on %s", model)
+			continue
+		}
+
+		return result.Candidates[0].Content.Parts[0].Text, nil
 	}
 
-	var result geminiResponse
-	if err := json.Unmarshal(respBody, &result); err != nil {
-		return "", err
-	}
-
-	if len(result.Candidates) == 0 || len(result.Candidates[0].Content.Parts) == 0 {
-		return "", fmt.Errorf("empty candidates")
-	}
-
-	return result.Candidates[0].Content.Parts[0].Text, nil
+	return "", lastErr
 }
 
 func saveMessage(convID, sender, text string) {

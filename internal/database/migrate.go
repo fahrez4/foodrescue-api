@@ -60,6 +60,17 @@ func Migrate() {
 		}
 	}
 
+	// Foto listing: toko mengunggah sebagai data URI base64, sehingga kolom
+	// harus cukup panjang (varchar(500) memotong gambar dan membuatnya rusak).
+	var photoType string
+	_ = DB.QueryRow(`SELECT DATA_TYPE FROM information_schema.COLUMNS
+		WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'food_listings' AND COLUMN_NAME = 'photo_url'`).Scan(&photoType)
+	if photoType != "" && photoType != "mediumtext" && photoType != "longtext" {
+		if _, err := DB.Exec("ALTER TABLE food_listings MODIFY photo_url MEDIUMTEXT NULL"); err != nil {
+			log.Fatalf("Migration failed (food_listings.photo_url): %v", err)
+		}
+	}
+
 	log.Println("Database migration completed")
 }
 

@@ -78,7 +78,9 @@ const listingSelect = `fl.id, fl.toko_id, fl.name, fl.category, COALESCE(fl.desc
  COALESCE(fl.food_safety_notes,''), fl.safe_until, fl.pickup_start_time, fl.pickup_end_time,
  fl.status, fl.created_at, fl.updated_at, COALESCE(tp.business_name,''), COALESCE(tp.address,'')`
 
-func scanListingView(row interface{ Scan(dest ...interface{}) error }) (*ListingView, error) {
+func scanListingView(row interface {
+	Scan(dest ...interface{}) error
+}) (*ListingView, error) {
 	var v ListingView
 	err := row.Scan(&v.ID, &v.TokoID, &v.Name, &v.Category, &v.Description, &v.PhotoURL,
 		&v.InitialPrice, &v.MinimumPrice, &v.CurrentPrice, &v.StockQuantity,
@@ -226,20 +228,38 @@ func DeleteListing(c *gin.Context) {
 
 	var tokoID string
 	database.DB.QueryRow("SELECT id FROM toko_profiles WHERE user_id = ?", userID).Scan(&tokoID)
-
-	result, err := database.DB.Exec("DELETE FROM food_listings WHERE id = ? AND toko_id = ?", id, tokoID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete listing"})
+	if tokoID == "" {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Toko profile not found"})
 		return
 	}
 
-	affected, _ := result.RowsAffected()
-	if affected == 0 {
+	var listingID string
+	if err := database.DB.QueryRow(
+		"SELECT id FROM food_listings WHERE id = ? AND toko_id = ?", id, tokoID,
+	).Scan(&listingID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Listing not found or not owned by you"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Listing deleted successfully"})
+	// Coba hapus permanen. Bila listing sudah dirujuk pesanan/komunitas (FK),
+	// tarik dari katalog dengan menandai non-aktif agar tetap bisa dihapus user.
+	result, err := database.DB.Exec("DELETE FROM food_listings WHERE id = ? AND toko_id = ?", id, tokoID)
+	if err == nil {
+		if affected, _ := result.RowsAffected(); affected > 0 {
+			c.JSON(http.StatusOK, gin.H{"message": "Listing deleted successfully"})
+			return
+		}
+	}
+
+	if _, err := database.DB.Exec(
+		"UPDATE food_listings SET status = 'inactive', updated_at = ? WHERE id = ? AND toko_id = ?",
+		time.Now(), id, tokoID,
+	); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete listing"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Listing withdrawn from catalog"})
 }
 
 func GetMyListings(c *gin.Context) {

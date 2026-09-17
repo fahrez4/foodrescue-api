@@ -233,7 +233,7 @@ func Setup(r *gin.Engine) {
 		// ───────── AI ─────────
 		aiGroup := api.Group("/ai")
 		{
-			authed := aiGroup.Group("", middleware.AuthMiddleware(), middleware.RoleGuard("user"))
+			authed := aiGroup.Group("", middleware.AuthMiddleware(), middleware.RoleGuard("user", "toko"))
 			{
 				authed.POST("/chat", ai.ChatFromListing)
 				authed.POST("/detect", ai.DetectFromCamera)
