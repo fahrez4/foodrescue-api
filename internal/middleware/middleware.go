@@ -3,10 +3,12 @@ package middleware
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"foodrescue-api/internal/config"
+	"foodrescue-api/internal/database"
 )
 
 type Claims struct {
@@ -71,6 +73,33 @@ func RoleGuard(roles ...string) gin.HandlerFunc {
 
 		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
 		c.Abort()
+	}
+}
+
+// ApiKeyAuth — autentikasi mesin POS via header X-API-Key.
+func ApiKeyAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		key := c.GetHeader("X-API-Key")
+		if key == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "X-API-Key header required"})
+			c.Abort()
+			return
+		}
+
+		var tokoID, id string
+		var isActive bool
+		err := database.DB.QueryRow(
+			"SELECT id, toko_id, is_active FROM toko_api_keys WHERE api_key = ?", key,
+		).Scan(&id, &tokoID, &isActive)
+		if err != nil || !isActive {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or inactive API key"})
+			c.Abort()
+			return
+		}
+
+		database.DB.Exec("UPDATE toko_api_keys SET last_used_at = ? WHERE id = ?", time.Now(), id)
+		c.Set("pos_toko_id", tokoID)
+		c.Next()
 	}
 }
 

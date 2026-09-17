@@ -24,6 +24,7 @@ import (
 	"foodrescue-api/internal/handlers/chat"
 	"foodrescue-api/internal/handlers/ai"
 	"foodrescue-api/internal/handlers/payment"
+	"foodrescue-api/internal/handlers/pos"
 )
 
 func Setup(r *gin.Engine) {
@@ -58,6 +59,7 @@ func Setup(r *gin.Engine) {
 			{
 				authed.GET("/profile", auth.GetProfile)
 				authed.PUT("/profile", auth.UpdateProfile)
+				authed.POST("/switch-role", auth.SwitchRole)
 			}
 		}
 
@@ -87,12 +89,24 @@ func Setup(r *gin.Engine) {
 				authed.PUT("/me/profile", toko.UpdateTokoProfile)
 				authed.GET("/me/analytics", toko.GetSalesAnalytics)
 				authed.GET("/me/ratings", toko.GetTokoRatings)
+				authed.GET("/me/bank-accounts", toko.GetMyBankAccounts)
+				authed.POST("/me/bank-accounts", toko.CreateBankAccount)
+				authed.PUT("/me/bank-accounts/:id", toko.UpdateBankAccount)
+				authed.DELETE("/me/bank-accounts/:id", toko.DeleteBankAccount)
+				authed.POST("/me/bank-accounts/:id/primary", toko.SetPrimaryBankAccount)
+				authed.GET("/me/api-keys", toko.GetMyApiKeys)
+				authed.POST("/me/api-keys", toko.CreateApiKey)
+				authed.POST("/me/api-keys/:id/revoke", toko.RevokeApiKey)
+				authed.POST("/me/api-keys/:id/rotate", toko.RotateApiKey)
+				authed.GET("/me/certificate", toko.GetMyCertificate)
 			}
 		}
 
 		// ───────── KURIR ─────────
 		kurirGroup := api.Group("/kurirs")
 		{
+			kurirGroup.GET("/:courier_profile_id/public", kurir.GetCourierPublicProfile)
+
 			authed := kurirGroup.Group("", middleware.AuthMiddleware(), middleware.RoleGuard("kurir"))
 			{
 				authed.GET("/me/profile", kurir.GetMyCourierProfile)
@@ -130,9 +144,11 @@ func Setup(r *gin.Engine) {
 			{
 				authed.POST("", middleware.RoleGuard("user"), order.CreateOrder)
 				authed.GET("/me", order.GetMyOrders)
+				authed.GET("/toko", middleware.RoleGuard("toko"), order.GetTokoOrders)
 				authed.GET("/:id", order.GetOrder)
 				authed.POST("/:id/cancel", order.CancelOrder)
 				authed.POST("/:id/confirm-payment", order.ConfirmPayment)
+				authed.POST("/:id/verify-pickup", middleware.RoleGuard("toko"), order.VerifyPickup)
 			}
 		}
 
@@ -154,6 +170,7 @@ func Setup(r *gin.Engine) {
 			authed := communityGroup.Group("", middleware.AuthMiddleware())
 			{
 				authed.POST("", middleware.RoleGuard("toko"), community.CreateCommunityPost)
+				authed.GET("/me", middleware.RoleGuard("toko"), community.ListMyCommunityPosts)
 				authed.POST("/claim", middleware.RoleGuard("user"), community.ClaimCommunityPost)
 				authed.POST("/:id/confirm", community.ConfirmCommunityPickup)
 			}
@@ -200,10 +217,17 @@ func Setup(r *gin.Engine) {
 			authed := chatGroup.Group("", middleware.AuthMiddleware())
 			{
 				authed.POST("", chat.CreateChat)
+				authed.POST("/community", chat.CreateCommunityChat)
 				authed.GET("/me", chat.GetMyChats)
 				authed.GET("/:id/messages", chat.GetMessages)
 				authed.POST("/:id/messages", chat.SendMessage)
 			}
+		}
+
+		// ───────── POS INTEGRATION ─────────
+		posGroup := api.Group("/pos")
+		{
+			posGroup.POST("/listings", middleware.ApiKeyAuth(), pos.IngestListing)
 		}
 
 		// ───────── AI ─────────
@@ -222,6 +246,7 @@ func Setup(r *gin.Engine) {
 		paymentGroup := api.Group("/payments")
 		{
 			paymentGroup.POST("/create", middleware.AuthMiddleware(), payment.CreateTransaction)
+			paymentGroup.POST("/qris", middleware.AuthMiddleware(), payment.CreateQRIS)
 			paymentGroup.POST("/notification", payment.HandleNotification)
 		}
 

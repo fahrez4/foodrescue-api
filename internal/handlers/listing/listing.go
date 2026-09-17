@@ -67,28 +67,45 @@ func CreateListing(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"listing_id": id, "message": "Listing created successfully"})
 }
 
-func GetListing(c *gin.Context) {
-	id := c.Param("id")
+type ListingView struct {
+	models.FoodListing
+	TokoName string `json:"toko_name"`
+	Address  string `json:"address"`
+}
 
-	var listing models.FoodListing
-	err := database.DB.QueryRow(
-		`SELECT id, toko_id, name, category, description, photo_url, initial_price, minimum_price,
-		        current_price, stock_quantity, food_safety_notes, safe_until, pickup_start_time,
-		        pickup_end_time, status, created_at, updated_at
-		 FROM food_listings WHERE id = ?`, id,
-	).Scan(
-		&listing.ID, &listing.TokoID, &listing.Name, &listing.Category, &listing.Description,
-		&listing.PhotoURL, &listing.InitialPrice, &listing.MinimumPrice, &listing.CurrentPrice,
-		&listing.StockQuantity, &listing.FoodSafetyNotes, &listing.SafeUntil,
-		&listing.PickupStartTime, &listing.PickupEndTime, &listing.Status,
-		&listing.CreatedAt, &listing.UpdatedAt,
-	)
+const listingSelect = `fl.id, fl.toko_id, fl.name, fl.category, COALESCE(fl.description,''), COALESCE(fl.photo_url,''),
+ fl.initial_price, fl.minimum_price, fl.current_price, fl.stock_quantity,
+ COALESCE(fl.food_safety_notes,''), fl.safe_until, fl.pickup_start_time, fl.pickup_end_time,
+ fl.status, fl.created_at, fl.updated_at, COALESCE(tp.business_name,''), COALESCE(tp.address,'')`
+
+func scanListingView(row interface{ Scan(dest ...interface{}) error }) (*ListingView, error) {
+	var v ListingView
+	err := row.Scan(&v.ID, &v.TokoID, &v.Name, &v.Category, &v.Description, &v.PhotoURL,
+		&v.InitialPrice, &v.MinimumPrice, &v.CurrentPrice, &v.StockQuantity,
+		&v.FoodSafetyNotes, &v.SafeUntil, &v.PickupStartTime, &v.PickupEndTime,
+		&v.Status, &v.CreatedAt, &v.UpdatedAt, &v.TokoName, &v.Address)
+	if err != nil {
+		return nil, err
+	}
+	return &v, nil
+}
+
+func fetchListingView(id string) (*ListingView, error) {
+	return scanListingView(database.DB.QueryRow(
+		`SELECT `+listingSelect+`
+		 FROM food_listings fl
+		 JOIN toko_profiles tp ON fl.toko_id = tp.id
+		 WHERE fl.id = ?`, id))
+}
+
+func GetListing(c *gin.Context) {
+	view, err := fetchListingView(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Listing not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"listing": listing})
+	c.JSON(http.StatusOK, gin.H{"listing": view})
 }
 
 func ListListings(c *gin.Context) {
@@ -99,9 +116,10 @@ func ListListings(c *gin.Context) {
 
 	offset := (page - 1) * limit
 
-	query := `SELECT id, toko_id, name, category, description, photo_url, initial_price, minimum_price,
-	          current_price, stock_quantity, safe_until, status, created_at
-	          FROM food_listings WHERE status = 'active'`
+	query := `SELECT ` + listingSelect + `
+	          FROM food_listings fl
+	          JOIN toko_profiles tp ON fl.toko_id = tp.id
+	          WHERE fl.status = 'active'`
 	countQuery := "SELECT COUNT(*) FROM food_listings WHERE status = 'active'"
 
 	var args []interface{}
@@ -130,13 +148,13 @@ func ListListings(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	var listings []models.FoodListing
+	var listings []ListingView
 	for rows.Next() {
-		var l models.FoodListing
-		rows.Scan(&l.ID, &l.TokoID, &l.Name, &l.Category, &l.Description,
-			&l.PhotoURL, &l.InitialPrice, &l.MinimumPrice, &l.CurrentPrice,
-			&l.StockQuantity, &l.SafeUntil, &l.Status, &l.CreatedAt)
-		listings = append(listings, l)
+		v, err := scanListingView(rows)
+		if err != nil {
+			continue
+		}
+		listings = append(listings, *v)
 	}
 
 	totalPages := int(math.Ceil(float64(total) / float64(limit)))
@@ -235,22 +253,23 @@ func GetMyListings(c *gin.Context) {
 	}
 
 	rows, err := database.DB.Query(
-		`SELECT id, toko_id, name, category, description, photo_url, initial_price, minimum_price,
-		        current_price, stock_quantity, safe_until, status, created_at
-		 FROM food_listings WHERE toko_id = ? ORDER BY created_at DESC`, tokoID)
+		`SELECT `+listingSelect+`
+		 FROM food_listings fl
+		 JOIN toko_profiles tp ON fl.toko_id = tp.id
+		 WHERE fl.toko_id = ? ORDER BY fl.created_at DESC`, tokoID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}
 	defer rows.Close()
 
-	var listings []models.FoodListing
+	var listings []ListingView
 	for rows.Next() {
-		var l models.FoodListing
-		rows.Scan(&l.ID, &l.TokoID, &l.Name, &l.Category, &l.Description,
-			&l.PhotoURL, &l.InitialPrice, &l.MinimumPrice, &l.CurrentPrice,
-			&l.StockQuantity, &l.SafeUntil, &l.Status, &l.CreatedAt)
-		listings = append(listings, l)
+		v, err := scanListingView(rows)
+		if err != nil {
+			continue
+		}
+		listings = append(listings, *v)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"listings": listings})

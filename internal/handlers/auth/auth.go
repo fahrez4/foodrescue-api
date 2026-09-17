@@ -183,6 +183,61 @@ func UpdateProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
 }
 
+// SwitchRole — pindah role aktif (multi-role) tanpa login ulang.
+// Eliglible: user selalu boleh jadi 'user'; jadi toko/kurir hanya jika profil ada.
+func SwitchRole(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	var req models.SwitchRoleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.Role == "toko" {
+		var n int
+		_ = database.DB.QueryRow("SELECT COUNT(*) FROM toko_profiles WHERE user_id = ?", userID).Scan(&n)
+		if n == 0 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Akun ini tidak memiliki profil Mitra Toko"})
+			return
+		}
+	}
+	if req.Role == "kurir" {
+		var n int
+		_ = database.DB.QueryRow("SELECT COUNT(*) FROM courier_profiles WHERE user_id = ?", userID).Scan(&n)
+		if n == 0 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Akun ini tidak memiliki profil Kurir"})
+			return
+		}
+	}
+
+	if _, err := database.DB.Exec(
+		"UPDATE users SET role = ?, updated_at = ? WHERE id = ?", req.Role, time.Now(), userID,
+	); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to switch role"})
+		return
+	}
+
+	var user models.User
+	err := database.DB.QueryRow(
+		`SELECT id, email, full_name, photo_url, phone_number, auth_provider, role, is_ngo_verified,
+		        trust_score, latitude, longitude, address_text, account_status, created_at, updated_at
+		 FROM users WHERE id = ?`, userID,
+	).Scan(
+		&user.ID, &user.Email, &user.FullName, &user.PhotoURL, &user.PhoneNumber,
+		&user.AuthProvider, &user.Role, &user.IsNGOVerified, &user.TrustScore,
+		&user.Latitude, &user.Longitude, &user.AddressText, &user.AccountStatus,
+		&user.CreatedAt, &user.UpdatedAt,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reload user"})
+		return
+	}
+
+	token := generateToken(user.ID, user.Email, user.Role)
+	c.JSON(http.StatusOK, models.AuthResponse{Token: token, User: user})
+}
+
 func generateToken(userID, email, role string) string {
 	claims := &middleware.Claims{
 		UserID: userID,

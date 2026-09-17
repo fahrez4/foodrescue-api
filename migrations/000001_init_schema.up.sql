@@ -297,8 +297,10 @@ CREATE TABLE ai_conversation_messages (
 DROP TABLE IF EXISTS chats;
 CREATE TABLE chats (
     id                  CHAR(36)        NOT NULL PRIMARY KEY,
-    order_id            CHAR(36)        NOT NULL,
+    order_id            CHAR(36)        NULL,
+    community_post_id   CHAR(36)        NULL,
     created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_chat_community_post (community_post_id),
     INDEX idx_chat_order (order_id),
     CONSTRAINT fk_chat_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -354,6 +356,36 @@ CREATE TABLE reports (
     INDEX idx_report_status (report_status),
     CONSTRAINT fk_report_reporter FOREIGN KEY (reporter_user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_report_reviewer FOREIGN KEY (reviewed_by_admin_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 16. TOKO BANK ACCOUNTS (rekening pencairan)
+DROP TABLE IF EXISTS toko_bank_accounts;
+CREATE TABLE toko_bank_accounts (
+    id                  CHAR(36)        NOT NULL PRIMARY KEY,
+    toko_id             CHAR(36)        NOT NULL,
+    bank_name           VARCHAR(100)    NOT NULL,
+    bank_code           VARCHAR(20)     NOT NULL DEFAULT '',
+    account_number      VARCHAR(50)     NOT NULL,
+    account_holder_name VARCHAR(150)    NOT NULL,
+    is_primary          BOOLEAN         NOT NULL DEFAULT FALSE,
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_bank_toko (toko_id),
+    CONSTRAINT fk_bank_toko FOREIGN KEY (toko_id) REFERENCES toko_profiles(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 17. TOKO API KEYS (integrasi POS)
+DROP TABLE IF EXISTS toko_api_keys;
+CREATE TABLE toko_api_keys (
+    id                  CHAR(36)        NOT NULL PRIMARY KEY,
+    toko_id             CHAR(36)        NOT NULL,
+    label               VARCHAR(100)    NOT NULL DEFAULT '',
+    api_key             VARCHAR(100)    NOT NULL UNIQUE,
+    is_active           BOOLEAN         NOT NULL DEFAULT TRUE,
+    last_used_at        DATETIME        NULL,
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_apikey_toko (toko_id),
+    CONSTRAINT fk_apikey_toko FOREIGN KEY (toko_id) REFERENCES toko_profiles(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

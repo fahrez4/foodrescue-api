@@ -14,6 +14,32 @@ import (
 	"foodrescue-api/internal/models"
 )
 
+// OrderView memperkaya Order dengan informasi listing & pengiriman yang
+// dibutuhkan aplikasi mobile (nama barang, alamat toko, status trip).
+type OrderView struct {
+	models.Order
+	Listing       *models.FoodListing `json:"listing"`
+	PickupAddress string              `json:"pickup_address"`
+	TripStatus    string              `json:"trip_status"`
+}
+
+// TokoOrderView — ringkasan pesanan masuk untuk kasir toko.
+type TokoOrderView struct {
+	ID                string              `json:"id"`
+	Code              string              `json:"code"`
+	BuyerName         string              `json:"buyer_name"`
+	ItemSummary       string              `json:"item_summary"`
+	QuantityLabel     string              `json:"quantity_label"`
+	TotalAmount       float64             `json:"total_amount"`
+	PaymentStatus     string              `json:"payment_status"`
+	FulfillmentMethod string              `json:"fulfillment_method"`
+	OrderStatus       string              `json:"order_status"`
+	PinPickup         string              `json:"pin_pickup"`
+	EtaLabel          *string             `json:"eta_label"`
+	DropoffPoint      *string             `json:"dropoff_point"`
+	Listing           *models.FoodListing `json:"listing"`
+}
+
 func CreateOrder(c *gin.Context) {
 	userID := c.GetString("user_id")
 
@@ -88,7 +114,7 @@ func CreateOrder(c *gin.Context) {
 			`INSERT INTO deliveries (id, order_id, matching_status, pickup_latitude, pickup_longitude,
 			 dropoff_latitude, dropoff_longitude, pickup_confirmation_code, dropoff_confirmation_code,
 			 offer_expires_at, delivery_fee, created_at, updated_at)
-			 VALUES (?, ?, 'mencari_kurir', ?, ?, ?, ?, ?, ?, ?, 5000, ?, ?)`,
+			 VALUES (?, ?, 'mencari_kurir', ?, ?, ?, ?, ?, ?, ?, 8000, ?, ?)`,
 			deliveryID, orderID, pickupLat, pickupLng, dropoffLat, dropoffLng,
 			pickupCode, dropoffCode, time.Now().Add(5*time.Minute), time.Now(), time.Now(),
 		)
@@ -97,11 +123,57 @@ func CreateOrder(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"order_id":         orderID,
+		"order_id":          orderID,
 		"confirmation_code": code,
-		"total_amount":     totalAmount,
-		"message":          "Order created successfully",
+		"total_amount":      totalAmount,
+		"message":           "Order created successfully",
 	})
+}
+
+// myTokoID mengambil id toko_profile milik user login saat ini.
+func myTokoID(c *gin.Context) (string, bool) {
+	var tokoID string
+	if err := database.DB.QueryRow(
+		"SELECT id FROM toko_profiles WHERE user_id = ?", c.GetString("user_id"),
+	).Scan(&tokoID); err != nil {
+		return "", false
+	}
+	return tokoID, true
+}
+
+// enrichOrderView melengkapi Order dengan listing (join toko) dan delivery.
+func enrichOrderView(order models.Order) OrderView {
+	var v OrderView
+	v.Order = order
+
+	var fl models.FoodListing
+	err := database.DB.QueryRow(
+		`SELECT fl.id, fl.toko_id, fl.name, fl.category, fl.description, fl.photo_url,
+		        fl.initial_price, fl.minimum_price, fl.current_price, fl.stock_quantity,
+		        fl.food_safety_notes, fl.safe_until, fl.pickup_start_time, fl.pickup_end_time,
+		        fl.status, fl.created_at, fl.updated_at,
+		        COALESCE(tp.address, '')
+		 FROM food_listings fl
+		 LEFT JOIN toko_profiles tp ON fl.toko_id = tp.id
+		 WHERE fl.id = ?`, order.ListingID,
+	).Scan(
+		&fl.ID, &fl.TokoID, &fl.Name, &fl.Category, &fl.Description, &fl.PhotoURL,
+		&fl.InitialPrice, &fl.MinimumPrice, &fl.CurrentPrice, &fl.StockQuantity,
+		&fl.FoodSafetyNotes, &fl.SafeUntil, &fl.PickupStartTime, &fl.PickupEndTime,
+		&fl.Status, &fl.CreatedAt, &fl.UpdatedAt, &v.PickupAddress,
+	)
+	if err == nil {
+		v.Listing = &fl
+	}
+
+	var trip string
+	if err := database.DB.QueryRow(
+		"SELECT COALESCE(trip_status, '') FROM deliveries WHERE order_id = ?", order.ID,
+	).Scan(&trip); err == nil {
+		v.TripStatus = trip
+	}
+
+	return v
 }
 
 func GetMyOrders(c *gin.Context) {
@@ -118,13 +190,15 @@ func GetMyOrders(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	var orders []models.Order
+	orders := make([]OrderView, 0)
 	for rows.Next() {
 		var o models.Order
-		rows.Scan(&o.ID, &o.ListingID, &o.UserID, &o.Quantity, &o.PriceAtPurchase, &o.TotalAmount,
+		if err := rows.Scan(&o.ID, &o.ListingID, &o.UserID, &o.Quantity, &o.PriceAtPurchase, &o.TotalAmount,
 			&o.FulfillmentMethod, &o.PaymentMethod, &o.PaymentStatus, &o.OrderStatus,
-			&o.ConfirmationCode, &o.CreatedAt, &o.CompletedAt)
-		orders = append(orders, o)
+			&o.ConfirmationCode, &o.CreatedAt, &o.CompletedAt); err != nil {
+			continue
+		}
+		orders = append(orders, enrichOrderView(o))
 	}
 
 	c.JSON(http.StatusOK, gin.H{"orders": orders})
@@ -147,7 +221,182 @@ func GetOrder(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"order": o})
+	c.JSON(http.StatusOK, gin.H{"order": enrichOrderView(o)})
+}
+
+// GetTokoOrders — pesanan masuk untuk kasir toko (role toko).
+func GetTokoOrders(c *gin.Context) {
+	tokoID, ok := myTokoID(c)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Toko profile not found"})
+		return
+	}
+
+	rows, err := database.DB.Query(
+		`SELECT o.id, o.listing_id, o.user_id, o.quantity, o.price_at_purchase, o.total_amount,
+		        o.fulfillment_method, COALESCE(o.payment_method,''), o.payment_status, o.order_status,
+		        o.confirmation_code, o.created_at, o.completed_at,
+		        COALESCE(u.full_name,''), COALESCE(u.address_text,''),
+		        fl.name, COALESCE(d.trip_status,''),
+		        COALESCE(d.pickup_confirmation_code, '')
+		 FROM orders o
+		 JOIN food_listings fl ON o.listing_id = fl.id
+		 JOIN users u ON o.user_id = u.id
+		 LEFT JOIN deliveries d ON d.order_id = o.id
+		 WHERE fl.toko_id = ?
+		 ORDER BY o.created_at DESC`, tokoID,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	defer rows.Close()
+
+	type row struct {
+		order        models.Order
+		buyerName    string
+		buyerAddress string
+		itemName     string
+		tripStatus   string
+		pinPickup    string
+	}
+
+	rws := make([]row, 0)
+	for rows.Next() {
+		var r row
+		if err := rows.Scan(&r.order.ID, &r.order.ListingID, &r.order.UserID, &r.order.Quantity, &r.order.PriceAtPurchase, &r.order.TotalAmount,
+			&r.order.FulfillmentMethod, &r.order.PaymentMethod, &r.order.PaymentStatus, &r.order.OrderStatus,
+			&r.order.ConfirmationCode, &r.order.CreatedAt, &r.order.CompletedAt,
+			&r.buyerName, &r.buyerAddress, &r.itemName, &r.tripStatus, &r.pinPickup); err != nil {
+			continue
+		}
+		rws = append(rws, r)
+	}
+
+	items := make([]TokoOrderView, 0, len(rws))
+	for _, r := range rws {
+		qtyLabel := fmt.Sprintf("%dx", r.order.Quantity)
+		pin := r.pinPickup
+		if pin == "" {
+			pin = r.order.ConfirmationCode
+		}
+		tv := TokoOrderView{
+			ID:                r.order.ID,
+			Code:              r.order.ConfirmationCode,
+			BuyerName:         r.buyerName,
+			ItemSummary:       r.itemName,
+			QuantityLabel:     qtyLabel,
+			TotalAmount:       r.order.TotalAmount,
+			PaymentStatus:     r.order.PaymentStatus,
+			FulfillmentMethod: r.order.FulfillmentMethod,
+			OrderStatus:       r.order.OrderStatus,
+			PinPickup:         pin,
+			Listing:           enrichListing(r.order.ListingID),
+		}
+		if r.buyerAddress != "" {
+			dp := r.buyerAddress
+			tv.DropoffPoint = &dp
+		}
+		if r.order.FulfillmentMethod == "diantar_kurir" && r.tripStatus != "" {
+			eta := tripETA(r.tripStatus)
+			tv.EtaLabel = &eta
+		}
+		items = append(items, tv)
+	}
+
+	if items == nil {
+		items = []TokoOrderView{}
+	}
+	c.JSON(http.StatusOK, gin.H{"orders": items})
+}
+
+// VerifyPickup — kasir toko memverifikasi PIN serah terima dan melepas escrow.
+func VerifyPickup(c *gin.Context) {
+	orderID := c.Param("id")
+
+	tokoID, ok := myTokoID(c)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Toko profile not found"})
+		return
+	}
+
+	var req struct {
+		PIN string `json:"pin" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Pastikan order milik listing toko ini.
+	var orderStatus, expCode string
+	var deliveryCode models.NullString
+	row := database.DB.QueryRow(
+		`SELECT o.order_status, o.confirmation_code, d.pickup_confirmation_code
+		 FROM orders o
+		 JOIN food_listings fl ON o.listing_id = fl.id
+		 LEFT JOIN deliveries d ON d.order_id = o.id
+		 WHERE o.id = ? AND fl.toko_id = ?`, orderID, tokoID,
+	)
+	if err := row.Scan(&orderStatus, &expCode, &deliveryCode); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
+		return
+	}
+
+	valid := req.PIN == expCode || (deliveryCode.Valid && req.PIN == deliveryCode.String)
+	if !valid {
+		c.JSON(http.StatusOK, gin.H{"valid": false, "message": "PIN tidak cocok"})
+		return
+	}
+
+	if orderStatus == "dibatalkan" {
+		c.JSON(http.StatusBadRequest, gin.H{"valid": false, "message": "Pesanan sudah dibatalkan"})
+		return
+	}
+
+	newStatus := "selesai"
+	if orderStatus != "selesai" {
+		database.DB.Exec(
+			"UPDATE orders SET order_status = ?, payment_status = 'paid', completed_at = ? WHERE id = ?",
+			newStatus, time.Now(), orderID,
+		)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"valid": true, "message": "Pesanan diverifikasi", "order_status": newStatus})
+}
+
+func enrichListing(listingID string) *models.FoodListing {
+	var fl models.FoodListing
+	err := database.DB.QueryRow(
+		`SELECT id, toko_id, name, category, description, photo_url, initial_price, minimum_price,
+		        current_price, stock_quantity, food_safety_notes, safe_until, pickup_start_time,
+		        pickup_end_time, status, created_at, updated_at
+		 FROM food_listings WHERE id = ?`, listingID,
+	).Scan(
+		&fl.ID, &fl.TokoID, &fl.Name, &fl.Category, &fl.Description, &fl.PhotoURL,
+		&fl.InitialPrice, &fl.MinimumPrice, &fl.CurrentPrice, &fl.StockQuantity,
+		&fl.FoodSafetyNotes, &fl.SafeUntil, &fl.PickupStartTime, &fl.PickupEndTime,
+		&fl.Status, &fl.CreatedAt, &fl.UpdatedAt,
+	)
+	if err != nil {
+		return nil
+	}
+	return &fl
+}
+
+func tripETA(tripStatus string) string {
+	switch tripStatus {
+	case "menuju_toko":
+		return "Tiba di toko dalam 5 mnt"
+	case "barang_diambil":
+		return "Barang sudah diambil kurir"
+	case "menuju_user":
+		return "Sedang dalam perjalanan ke pembeli"
+	case "diterima_user":
+		return "Pesanan sampai & terverifikasi"
+	default:
+		return "Kurir sedang bertugas"
+	}
 }
 
 func CancelOrder(c *gin.Context) {
@@ -298,5 +547,3 @@ func haversine(lat1, lon1, lat2, lon2 float64) float64 {
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 	return R * c
 }
-
-var _ = fmt.Sprintf

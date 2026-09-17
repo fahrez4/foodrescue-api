@@ -76,6 +76,52 @@ func ListCommunityPosts(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"community_posts": posts})
 }
 
+// ListMyCommunityPosts — seluruh post komunitas milik toko yang login
+// (tersedia, diklaim, selesai, dibatalkan) + info klaim.
+func ListMyCommunityPosts(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	var tokoID string
+	err := database.DB.QueryRow("SELECT id FROM toko_profiles WHERE user_id = ?", userID).Scan(&tokoID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Toko profile not found"})
+		return
+	}
+
+	rows, err := database.DB.Query(
+		`SELECT cp.id, cp.listing_id, cp.toko_id, cp.target_category, cp.transport_fee,
+		        cp.claim_status, cp.claimed_by_user_id, cp.claimed_at, cp.completed_at, cp.created_at,
+		        fl.name, fl.photo_url, fl.description, COALESCE(u.full_name, '')
+		 FROM community_posts cp
+		 JOIN food_listings fl ON cp.listing_id = fl.id
+		 LEFT JOIN users u ON cp.claimed_by_user_id = u.id
+		 WHERE cp.toko_id = ? ORDER BY cp.created_at DESC`, tokoID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	defer rows.Close()
+
+	type MyCommunityPost struct {
+		models.CommunityPost
+		ListingName     string `json:"listing_name"`
+		ListingPhoto    string `json:"listing_photo"`
+		ListingDesc     string `json:"listing_description"`
+		ClaimedByName   string `json:"claimed_by_name"`
+	}
+
+	var posts []MyCommunityPost
+	for rows.Next() {
+		var p MyCommunityPost
+		rows.Scan(&p.ID, &p.ListingID, &p.TokoID, &p.TargetCategory, &p.TransportFee,
+			&p.ClaimStatus, &p.ClaimedByUserID, &p.ClaimedAt, &p.CompletedAt, &p.CreatedAt,
+			&p.ListingName, &p.ListingPhoto, &p.ListingDesc, &p.ClaimedByName)
+		posts = append(posts, p)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"community_posts": posts})
+}
+
 func ClaimCommunityPost(c *gin.Context) {
 	userID := c.GetString("user_id")
 
@@ -106,13 +152,35 @@ func ClaimCommunityPost(c *gin.Context) {
 
 func ConfirmCommunityPickup(c *gin.Context) {
 	postID := c.Param("id")
+	userID := c.GetString("user_id")
 
-	_, err := database.DB.Exec(
+	// Hanya pemilik toko atau pengeklaim yang boleh mengonfirmasi serah terima.
+	var tokoOwner string
+	var claimant models.NullString
+	err := database.DB.QueryRow(
+		"SELECT COALESCE(tp.user_id,''), cp.claimed_by_user_id FROM community_posts cp LEFT JOIN toko_profiles tp ON cp.toko_id = tp.id WHERE cp.id = ?",
+		postID,
+	).Scan(&tokoOwner, &claimant)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Community post not found"})
+		return
+	}
+	if tokoOwner != userID && (!claimant.Valid || claimant.String != userID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to confirm this pickup"})
+		return
+	}
+
+	result, err := database.DB.Exec(
 		`UPDATE community_posts SET claim_status = 'selesai', completed_at = ? WHERE id = ? AND claim_status = 'diklaim'`,
 		time.Now(), postID,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to confirm"})
+		return
+	}
+	affected, _ := result.RowsAffected()
+	if affected == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Post hanya bisa dikonfirmasi saat berstatus diklaim"})
 		return
 	}
 

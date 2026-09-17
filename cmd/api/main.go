@@ -14,6 +14,7 @@ import (
 func main() {
 	config.Load()
 	database.Connect()
+	database.Migrate()
 	defer database.Close()
 
 	gin.SetMode(gin.ReleaseMode)

@@ -370,9 +370,10 @@ type AIConversationMessage struct {
 
 // ──────────────── CHATS / MESSAGES ────────────────
 type Chat struct {
-	ID        string    `json:"id"`
-	OrderID   string    `json:"order_id"`
-	CreatedAt time.Time `json:"created_at"`
+	ID              string     `json:"id"`
+	OrderID         NullString `json:"order_id"`
+	CommunityPostID NullString `json:"community_post_id"`
+	CreatedAt       time.Time  `json:"created_at"`
 }
 
 type Message struct {
@@ -382,6 +383,30 @@ type Message struct {
 	MessageText string    `json:"message_text"`
 	IsRead      bool      `json:"is_read"`
 	CreatedAt   time.Time `json:"created_at"`
+}
+
+// ──────────────── TOKO BANK ACCOUNTS ────────────────
+type TokoBankAccount struct {
+	ID                string    `json:"id"`
+	TokoID            string    `json:"toko_id"`
+	BankName          string    `json:"bank_name"`
+	BankCode          string    `json:"bank_code"`
+	AccountNumber     string    `json:"account_number"`
+	AccountHolderName string    `json:"account_holder_name"`
+	IsPrimary         bool      `json:"is_primary"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
+}
+
+// ──────────────── TOKO API KEYS (POS INTEGRATION) ────────────────
+type TokoApiKey struct {
+	ID         string    `json:"id"`
+	TokoID     string    `json:"toko_id"`
+	Label      string    `json:"label"`
+	APIKey     string    `json:"api_key"`
+	IsActive   bool      `json:"is_active"`
+	LastUsedAt NullTime  `json:"last_used_at"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 // ──────────────── RATINGS ────────────────
@@ -581,4 +606,40 @@ type PaginatedResponse struct {
 	Limit      int         `json:"limit"`
 	Total      int         `json:"total"`
 	TotalPages int         `json:"total_pages"`
+}
+
+// ──────────────── BANK ACCOUNT DTOs ────────────────
+
+type CreateBankAccountRequest struct {
+	BankName          string `json:"bank_name" binding:"required"`
+	BankCode          string `json:"bank_code" binding:"omitempty"`
+	AccountNumber     string `json:"account_number" binding:"required"`
+	AccountHolderName string `json:"account_holder_name" binding:"required"`
+	IsPrimary         bool   `json:"is_primary"`
+}
+
+type UpdateBankAccountRequest struct {
+	BankName          string `json:"bank_name" binding:"omitempty"`
+	BankCode          string `json:"bank_code" binding:"omitempty"`
+	AccountNumber     string `json:"account_number" binding:"omitempty"`
+	AccountHolderName string `json:"account_holder_name" binding:"omitempty"`
+	IsPrimary         *bool  `json:"is_primary" binding:"omitempty"`
+}
+
+// ──────────────── API KEY DTOs ────────────────
+
+type CreateApiKeyRequest struct {
+	Label string `json:"label" binding:"omitempty"`
+}
+
+// ──────────────── AUTH: SWITCH ROLE ────────────────
+
+type SwitchRoleRequest struct {
+	Role string `json:"role" binding:"required,oneof=user toko kurir"`
+}
+
+// ──────────────── COMMUNITY CHAT ────────────────
+
+type CreateCommunityChatRequest struct {
+	CommunityPostID string `json:"community_post_id" binding:"required"`
 }

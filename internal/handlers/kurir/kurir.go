@@ -10,6 +10,30 @@ import (
 	"foodrescue-api/internal/models"
 )
 
+// GetCourierPublicProfile mengembalikan user_id dari courier_profiles.id (publik, tanpa auth).
+// Digunakan oleh user saat submit rating kurir: perlu user_id dari courier_profile_id.
+func GetCourierPublicProfile(c *gin.Context) {
+	courierProfileID := c.Param("courier_profile_id")
+	if courierProfileID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "courier_profile_id diperlukan"})
+		return
+	}
+
+	var userID string
+	err := database.DB.QueryRow(
+		`SELECT user_id FROM courier_profiles WHERE id = ?`, courierProfileID,
+	).Scan(&userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Profil kurir tidak ditemukan"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"courier_profile_id": courierProfileID,
+		"user_id":            userID,
+	})
+}
+
 func GetMyCourierProfile(c *gin.Context) {
 	userID := c.GetString("user_id")
 
