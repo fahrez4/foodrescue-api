@@ -8,23 +8,23 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	_ "foodrescue-api/docs"
-	"foodrescue-api/internal/middleware"
+	"foodrescue-api/internal/handlers/admin"
+	"foodrescue-api/internal/handlers/ai"
 	"foodrescue-api/internal/handlers/auth"
-	"foodrescue-api/internal/handlers/user"
-	"foodrescue-api/internal/handlers/toko"
+	"foodrescue-api/internal/handlers/chat"
+	"foodrescue-api/internal/handlers/community"
+	"foodrescue-api/internal/handlers/delivery"
+	"foodrescue-api/internal/handlers/emergency"
 	"foodrescue-api/internal/handlers/kurir"
 	"foodrescue-api/internal/handlers/listing"
 	"foodrescue-api/internal/handlers/order"
-	"foodrescue-api/internal/handlers/delivery"
-	"foodrescue-api/internal/handlers/community"
-	"foodrescue-api/internal/handlers/emergency"
-	"foodrescue-api/internal/handlers/admin"
-	"foodrescue-api/internal/handlers/rating"
-	"foodrescue-api/internal/handlers/report"
-	"foodrescue-api/internal/handlers/chat"
-	"foodrescue-api/internal/handlers/ai"
 	"foodrescue-api/internal/handlers/payment"
 	"foodrescue-api/internal/handlers/pos"
+	"foodrescue-api/internal/handlers/rating"
+	"foodrescue-api/internal/handlers/report"
+	"foodrescue-api/internal/handlers/toko"
+	"foodrescue-api/internal/handlers/user"
+	"foodrescue-api/internal/middleware"
 )
 
 func Setup(r *gin.Engine) {
@@ -264,6 +264,9 @@ func Setup(r *gin.Engine) {
 				authed.PUT("/users/:id/verify-ngo", admin.VerifyNGO)
 				authed.GET("/reports", admin.ListReports)
 				authed.PUT("/reports/:id", admin.ReviewReport)
+				authed.GET("/orders", admin.ListOrders)
+				authed.PUT("/orders/:id/status", admin.UpdateOrderStatus)
+				authed.GET("/logs", admin.ListLogs)
 			}
 		}
 	}

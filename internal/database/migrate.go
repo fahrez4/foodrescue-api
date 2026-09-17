@@ -30,6 +30,17 @@ func Migrate() {
 			INDEX idx_apikey_toko (toko_id),
 			CONSTRAINT fk_apikey_toko FOREIGN KEY (toko_id) REFERENCES toko_profiles(id) ON DELETE CASCADE
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+		`CREATE TABLE IF NOT EXISTS admin_activity_logs (
+			id CHAR(36) PRIMARY KEY,
+			admin_user_id CHAR(36) NOT NULL,
+			admin_name VARCHAR(150) NOT NULL DEFAULT '',
+			action VARCHAR(60) NOT NULL,
+			target_type VARCHAR(40) NOT NULL DEFAULT '',
+			target_id CHAR(36) NOT NULL DEFAULT '',
+			description VARCHAR(255) NOT NULL DEFAULT '',
+			created_at DATETIME NOT NULL,
+			INDEX idx_aal_created (created_at)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 	}
 
 	for _, s := range stmts {
