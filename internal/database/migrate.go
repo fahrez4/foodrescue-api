@@ -18,7 +18,7 @@ func Migrate() {
 			updated_at DATETIME NOT NULL,
 			INDEX idx_bank_toko (toko_id),
 			CONSTRAINT fk_bank_toko FOREIGN KEY (toko_id) REFERENCES toko_profiles(id) ON DELETE CASCADE
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 		`CREATE TABLE IF NOT EXISTS toko_api_keys (
 			id CHAR(36) PRIMARY KEY,
 			toko_id CHAR(36) NOT NULL,
@@ -29,7 +29,7 @@ func Migrate() {
 			created_at DATETIME NOT NULL,
 			INDEX idx_apikey_toko (toko_id),
 			CONSTRAINT fk_apikey_toko FOREIGN KEY (toko_id) REFERENCES toko_profiles(id) ON DELETE CASCADE
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 	}
 
 	for _, s := range stmts {
