@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"database/sql"
 	"net/http"
 	"strings"
 	"time"
@@ -43,6 +44,33 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		if err != nil || !token.Valid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			c.Abort()
+			return
+		}
+
+		// Pastikan akun masih ada & tidak diblokir (status berubah tanpa token baru).
+		var accountStatus string
+		err = database.DB.QueryRow(
+			"SELECT account_status FROM users WHERE id = ?", claims.UserID,
+		).Scan(&accountStatus)
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Akun tidak ditemukan. Silakan login ulang.",
+				"code":  "ACCOUNT_NOT_FOUND",
+			})
+			c.Abort()
+			return
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			c.Abort()
+			return
+		}
+		if accountStatus == "suspended" || accountStatus == "rejected" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "Akun Anda telah diblokir. Silakan hubungi admin.",
+				"code":  "ACCOUNT_BLOCKED",
+			})
 			c.Abort()
 			return
 		}

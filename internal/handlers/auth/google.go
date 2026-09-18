@@ -76,6 +76,14 @@ func GoogleLogin(c *gin.Context) {
 		return
 	}
 
+	if accountStatus == "suspended" || accountStatus == "rejected" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Akun Anda telah diblokir. Silakan hubungi admin.",
+			"code":  "ACCOUNT_BLOCKED",
+		})
+		return
+	}
+
 	// Auto-bind Google identity jika user ada (update provider & foto)
 	database.DB.Exec(
 		"UPDATE users SET auth_provider = 'google', photo_url = ? WHERE id = ? AND auth_provider = 'email_password'",

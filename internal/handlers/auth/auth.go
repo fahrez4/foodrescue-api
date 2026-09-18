@@ -132,6 +132,14 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	if user.AccountStatus == "suspended" || user.AccountStatus == "rejected" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Akun Anda telah diblokir. Silakan hubungi admin.",
+			"code":  "ACCOUNT_BLOCKED",
+		})
+		return
+	}
+
 	token := generateToken(user.ID, user.Email, user.Role)
 	c.JSON(http.StatusOK, models.AuthResponse{Token: token, User: user})
 }
